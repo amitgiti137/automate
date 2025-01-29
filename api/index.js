@@ -1,6 +1,7 @@
-const app = require('../server');  // Import the Express app from server.js
+const app = require('../server');
 
 module.exports = (req, res) => {
-  // Forward the request to your Express app
+  const server = app.listen(); // Start Express server if needed
   app(req, res);
+  server.close(); // Close server after request
 };
