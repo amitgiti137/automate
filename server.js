@@ -10,6 +10,11 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// This is the route that will display "Hello, World!" on the homepage
+app.get('/', (req, res) => {
+    res.send('<h1>Hello, World!</h1>');  // Respond with HTML
+  });
+
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/tasks', require('./routes/task'));
 
