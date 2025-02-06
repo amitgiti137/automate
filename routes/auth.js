@@ -25,8 +25,20 @@ router.post('/register', async (req, res) => {
             return res.status(400).json({ error: 'Email or WhatsApp number already exists' });
         }
 
+        // Get the last userId from the database and increment
+        const lastUser = await User.findOne().sort({ userId: -1 });
+        const newUserId = lastUser && lastUser.userId ? lastUser.userId + 1 : 100001;
+
         // Create new user with sequential userId and fixed vendorId
-        const user = new User({ firstName, lastName, email, password, whatsappNumber });
+        const user = new User({
+            firstName,
+            lastName,
+            email,
+            password,
+            whatsappNumber,
+            userId: newUserId // Assign userId manually
+        });
+
         await user.save();
 
         res.status(201).json({
@@ -38,6 +50,7 @@ router.post('/register', async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 });
+
 
 // **Login User**
 router.post('/login', async (req, res) => {

@@ -25,20 +25,28 @@ const UserSchema = new mongoose.Schema({
     role: { type: String, enum: ['admin', 'employee'], default: 'employee' },
 }, { timestamps: true });
 
+// Assign sequential userId before saving
+UserSchema.pre('validate', async function (next) {
+    if (!this.userId) {
+        try {
+            const lastUser = await mongoose.models.User.findOne().sort({ userId: -1 });
+
+            // If no user exists, start from 100001
+            this.userId = lastUser && lastUser.userId ? lastUser.userId + 1 : 100001;
+
+        } catch (error) {
+            console.error("Error generating userId:", error);
+            return next(error);
+        }
+    }
+    next();
+});
+
 // Hash password before saving
 UserSchema.pre('save', async function (next) {
     if (!this.isModified('password')) return next();
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
-    next();
-});
-
-// Assign sequential userId before saving
-UserSchema.pre('validate', async function (next) {
-    if (!this.userId) {
-        const lastUser = await mongoose.models.User.findOne().sort({ userId: -1 });
-        this.userId = lastUser ? lastUser.userId + 1 : 100001; // Start from 100001
-    }
     next();
 });
 
