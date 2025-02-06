@@ -4,38 +4,73 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const router = express.Router();
 
-// Register
+// **Register User**
 router.post('/register', async (req, res) => {
-    const { name, email, password, phoneNumber } = req.body;
+    const { firstName, lastName, email, password, confirmPassword, whatsappNumber } = req.body;
+
+    // Validate required fields
+    if (!firstName || !lastName || !email || !password || !confirmPassword || !whatsappNumber) {
+        return res.status(400).json({ error: 'All fields are required' });
+    }
+
+    // Check if passwords match
+    if (password !== confirmPassword) {
+        return res.status(400).json({ error: 'Passwords do not match' });
+    }
+
     try {
-        const user = new User({ name, email, password, phoneNumber });
+        // Check if email or phone number already exists
+        const existingUser = await User.findOne({ $or: [{ email }, { whatsappNumber }] });
+        if (existingUser) {
+            return res.status(400).json({ error: 'Email or WhatsApp number already exists' });
+        }
+
+        // Create new user with sequential userId and fixed vendorId
+        const user = new User({ firstName, lastName, email, password, whatsappNumber });
         await user.save();
-        res.status(201).json({ message: 'User registered successfully!' });
+
+        res.status(201).json({
+            message: 'User registered successfully!',
+            userId: user.userId,
+            vendorId: user.vendorId
+        });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
 
-// Login
+// **Login User**
 router.post('/login', async (req, res) => {
     const { email, password } = req.body;
+
     try {
         const user = await User.findOne({ email });
         if (!user) return res.status(404).json({ error: 'User not found' });
 
-        /* const isMatch = await bcrypt.compare(password, user.password);
-        if (!isMatch) return res.status(400).json({ error: 'Invalid credentials' }); */
-        if (password !== user.password) return res.status(400).json({ error: 'Invalid credentials' });
+        // Compare hashed password
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) return res.status(400).json({ error: 'Invalid credentials' });
 
+        // Generate JWT token
         const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '1h' });
-        res.json({ token });
+
+        res.json({
+            token,
+            userId: user.userId,
+            vendorId: user.vendorId,
+            user: {
+                firstName: user.firstName,
+                lastName: user.lastName,
+                email: user.email,
+                role: user.role
+            }
+        });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
 
-
-// Get User Details by Email
+// **Get User Details by Email**
 router.get('/user_details', async (req, res) => {
     const { email } = req.query;
 
@@ -51,9 +86,12 @@ router.get('/user_details', async (req, res) => {
         }
 
         const responseData = {
-            name: user.name,
+            userId: user.userId,
+            vendorId: user.vendorId,
+            firstName: user.firstName,
+            lastName: user.lastName,
             email: user.email,
-            phoneNumber: user.phoneNumber,
+            whatsappNumber: user.whatsappNumber,
             role: user.role,
         };
 
@@ -67,16 +105,14 @@ router.get('/user_details', async (req, res) => {
     }
 });
 
-// Fetch All Users
+// **Fetch All Users**
 router.get('/users', async (req, res) => {
     try {
-        const users = await User.find({}, 'name email phoneNumber role');
+        const users = await User.find({}, 'userId vendorId firstName lastName email whatsappNumber role');
         res.json(users);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
-
-
 
 module.exports = router;
