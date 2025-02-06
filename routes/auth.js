@@ -44,7 +44,12 @@ router.post('/register', async (req, res) => {
         res.status(201).json({
             message: 'User registered successfully!',
             userId: user.userId,
-            vendorId: user.vendorId
+            vendorId: user.vendorId,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: user.email,
+            whatsappNumber: user.whatsappNumber,
+            role: user.role,
         });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -76,6 +81,7 @@ router.post('/login', async (req, res) => {
                 firstName: user.firstName,
                 lastName: user.lastName,
                 email: user.email,
+                whatsappNumber: user.whatsappNumber,
                 role: user.role
             }
         });
