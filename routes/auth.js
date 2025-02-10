@@ -45,13 +45,11 @@ router.post('/register', async (req, res) => {
             message: 'User registered successfully!',
             userId: user.userId,
             vendorId: user.vendorId,
-            user: {
-                firstName: user.firstName,
-                lastName: user.lastName,
-                email: user.email,
-                whatsappNumber: user.whatsappNumber,
-                role: user.role
-            }
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: user.email,
+            whatsappNumber: user.whatsappNumber,
+            role: user.role,
         });
     } catch (err) {
         res.status(500).json({ error: err.message });
