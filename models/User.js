@@ -23,6 +23,10 @@ const UserSchema = new mongoose.Schema({
         }
     },
     role: { type: String, enum: ['admin', 'employee'], default: 'employee' },
+    department: { type: String, required: true },
+    designation: { type: String, required: true },
+    employeeCode: { type: String, required: true },
+    activeStatus: { type: String, required: true },
 }, { timestamps: true });
 
 // Assign sequential userId before saving
