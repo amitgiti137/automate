@@ -6,10 +6,10 @@ const router = express.Router();
 
 // **Register User**
 router.post('/register', async (req, res) => {
-    const { firstName, lastName, email, password, confirmPassword, whatsappNumber, department, designation, employeeCode, activeStatus, } = req.body;
+    const { firstName, lastName, email, password, confirmPassword, whatsappNumber } = req.body;
 
     // Validate required fields
-    if (!firstName || !lastName || !email || !password || !confirmPassword || !whatsappNumber || !department || !designation || !employeeCode || !activeStatus) {
+    if (!firstName || !lastName || !email || !password || !confirmPassword || !whatsappNumber) {
         return res.status(400).json({ error: 'All fields are required' });
     }
 
@@ -36,11 +36,7 @@ router.post('/register', async (req, res) => {
             email,
             password,
             whatsappNumber,
-            userId: newUserId, // Assign userId manually
-            department,
-            designation,
-            employeeCode,
-            activeStatus,
+            userId: newUserId // Assign userId manually
         });
 
         await user.save();
@@ -54,10 +50,6 @@ router.post('/register', async (req, res) => {
             email: user.email,
             whatsappNumber: user.whatsappNumber,
             role: user.role,
-            department: user.department,
-            designation: user.designation,
-            employeeCode: user.employeeCode,
-            activeStatus: user.activeStatus,
         });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -90,11 +82,7 @@ router.post('/login', async (req, res) => {
                 lastName: user.lastName,
                 email: user.email,
                 whatsappNumber: user.whatsappNumber,
-                role: user.role,
-                department: user.department,
-                designation: user.designation,
-                employeeCode: user.employeeCode,
-                activeStatus: user.activeStatus,
+                role: user.role
             }
         });
     } catch (err) {
@@ -125,11 +113,6 @@ router.get('/user_details', async (req, res) => {
             email: user.email,
             whatsappNumber: user.whatsappNumber,
             role: user.role,
-            department: user.department,
-            designation: user.designation,
-            employeeCode: user.employeeCode,
-            activeStatus: user.activeStatus,
-            
         };
 
         res.json({
