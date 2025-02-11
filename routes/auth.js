@@ -57,7 +57,9 @@ router.post('/register', async (req, res) => {
             department: user.department,
             designation: user.designation,
             employeeCode: user.employeeCode,
-            activeStatus: user.activeStatus
+            activeStatus: user.activeStatus,
+            createdAt: formatDate(user.createdAt),
+            updatedAt: formatDate(user.updatedAt)
         });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -94,7 +96,9 @@ router.post('/login', async (req, res) => {
                 department: user.department,
                 designation: user.designation,
                 employeeCode: user.employeeCode,
-                activeStatus: user.activeStatus
+                activeStatus: user.activeStatus,
+                createdAt: formatDate(user.createdAt),
+                updatedAt: formatDate(user.updatedAt)
             }
         });
     } catch (err) {
@@ -128,7 +132,9 @@ router.get('/user_details', async (req, res) => {
             department: user.department,
             designation: user.designation,
             employeeCode: user.employeeCode,
-            activeStatus: user.activeStatus
+            activeStatus: user.activeStatus,
+            createdAt: formatDate(user.createdAt),
+            updatedAt: formatDate(user.updatedAt)
         };
 
         res.json({
