@@ -46,7 +46,7 @@ router.post('/', async (req, res) => {
 // Reassign Task
 router.put('/reassign/:taskId', async (req, res) => {
     const { taskId } = req.params;
-    const { newAssignedTo } = req.body;
+    let { newAssignedTo } = req.body;
 
     try {
 
