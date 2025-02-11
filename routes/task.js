@@ -50,7 +50,7 @@ router.put('/reassign/:taskId', async (req, res) => {
 
     try {
         // Ensure the new assigned user exists
-        const newAssignee = await User.findById(newAssignedTo);
+        const newAssignee = await User.findById({ userId: newAssignedTo });
         if (!newAssignee) {
             return res.status(404).json({ error: 'New assignee not found' });
         }
@@ -60,15 +60,29 @@ router.put('/reassign/:taskId', async (req, res) => {
             taskId,
             { assignedTo: newAssignedTo },
             { new: true }
-        ).populate('assignedBy').populate('assignedTo');
+        );
 
         if (!updatedTask) {
             return res.status(404).json({ error: 'Task not found' });
         }
 
+        // ✅ Convert assignedBy and assignedTo userIds to names for the response
+        const assignedByUser = await User.findOne({ userId: updatedTask.assignedBy }, 'firstName lastName');
+        const assignedToUser = await User.findOne({ userId: updatedTask.assignedTo }, 'firstName lastName');
+
         res.json({
             message: 'Task reassigned successfully!',
-            task: updatedTask,
+            task: {
+                title: updatedTask.title,
+                description: updatedTask.description,
+                assignedBy: assignedByUser
+                    ? `${assignedByUser.firstName} ${assignedByUser.lastName}`
+                    : "Unknown",
+                assignedTo: assignedToUser
+                    ? `${assignedToUser.firstName} ${assignedToUser.lastName}`
+                    : "Unknown",
+                createdAt: updatedTask.createdAt.toLocaleString('en-GB', { timeZone: 'Asia/Kolkata' })
+            }
         });
     } catch (err) {
         res.status(500).json({ error: err.message });
