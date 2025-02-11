@@ -150,7 +150,7 @@ router.get('/user_details', async (req, res) => {
 // **Fetch All Users**
 router.get('/users', async (req, res) => {
     try {
-        const users = await User.find({}, 'userId vendorId firstName lastName email whatsappNumber role department designation employeeCode activeStatus');
+        const users = await User.find({}, 'userId vendorId firstName lastName email whatsappNumber role department designation employeeCode activeStatus createdAt updatedAt');
         res.json(users);
     } catch (err) {
         res.status(500).json({ error: err.message });
