@@ -67,8 +67,8 @@ router.put('/reassign/:taskId', async (req, res) => {
         }
 
         // ✅ Convert assignedBy and assignedTo userIds to names for the response
-        const assignedByUser = await User.findOne({ userId: updatedTask.assignedBy }, 'firstName lastName');
-        const assignedToUser = await User.findOne({ userId: updatedTask.assignedTo }, 'firstName lastName');
+        const assignedByUser = await User.findOne({ userId: Number(updatedTask.assignedBy) }, 'firstName lastName');
+        const assignedToUser = await User.findOne({ userId: Number(updatedTask.assignedTo) }, 'firstName lastName');
 
         res.json({
             message: 'Task reassigned successfully!',
