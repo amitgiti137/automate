@@ -49,8 +49,14 @@ router.put('/reassign/:taskId', async (req, res) => {
     const { newAssignedTo } = req.body;
 
     try {
+
+        // ✅ Ensure newAssignedTo is always an array and extract the first value
+        if (Array.isArray(newAssignedTo)) {
+            newAssignedTo = newAssignedTo[0]; // Extract first value
+        }
+
         // Ensure the new assigned user exists
-        const newAssignee = await User.findById({ userId: newAssignedTo });
+        const newAssignee = await User.findById({ userId: Number(newAssignedTo) });
         if (!newAssignee) {
             return res.status(404).json({ error: 'New assignee not found' });
         }
@@ -58,7 +64,7 @@ router.put('/reassign/:taskId', async (req, res) => {
         // Update the task with the new assignee
         const updatedTask = await Task.findByIdAndUpdate(
             taskId,
-            { assignedTo: newAssignedTo },
+            { assignedTo: Number(newAssignedTo) },
             { new: true }
         );
 
