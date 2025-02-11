@@ -88,12 +88,16 @@ router.get('/', async (req, res) => {
             const assignedToUsers = await User.find({ userId: { $in: task.assignedTo } }, 'firstName lastName userId');
 
             return {
+                _id: task._id,
                 title: task.title,
                 description: task.description,
-                assignedBy: assignedByUser 
-                    ? `${assignedByUser.firstName} ${assignedByUser.lastName} (UserID: ${assignedByUser.userId})`
-                    : "Unknown",
-                assignedTo: assignedToUsers.map(user => `${user.firstName} ${user.lastName} (UserID: ${user.userId})`),
+                assignedBy: assignedByUser
+                    ? { userId: assignedByUser.userId, name: `${assignedByUser.firstName} ${assignedByUser.lastName}` }
+                    : { userId: null, name: "Unknown" },
+                assignedTo: assignedToUsers.length > 0
+                    ? assignedToUsers.map(user => ({ userId: user.userId, name: `${user.firstName} ${user.lastName}` }))
+                    : [{ userId: null, name: "Unknown" }],
+                status: task.status,
                 createdAt: task.createdAt.toLocaleString('en-GB', { timeZone: 'Asia/Kolkata' })
             };
         }));
@@ -118,12 +122,16 @@ router.get('/:userId', async (req, res) => {
             const assignedToUsers = await User.find({ userId: { $in: task.assignedTo } }, 'firstName lastName userId');
 
             return {
+                _id: task._id,
                 title: task.title,
                 description: task.description,
-                assignedBy: assignedByUser 
-                    ? `${assignedByUser.firstName} ${assignedByUser.lastName} (UserID: ${assignedByUser.userId})`
-                    : "Unknown",
-                assignedTo: assignedToUsers.map(user => `${user.firstName} ${user.lastName} (UserID: ${user.userId})`),
+                assignedBy: assignedByUser
+                    ? { userId: assignedByUser.userId, name: `${assignedByUser.firstName} ${assignedByUser.lastName}` }
+                    : { userId: null, name: "Unknown" },
+                assignedTo: assignedToUsers.length > 0
+                    ? assignedToUsers.map(user => ({ userId: user.userId, name: `${user.firstName} ${user.lastName}` }))
+                    : [{ userId: null, name: "Unknown" }],
+                status: task.status,
                 createdAt: task.createdAt.toLocaleString('en-GB', { timeZone: 'Asia/Kolkata' })
             };
         }));
