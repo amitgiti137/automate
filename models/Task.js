@@ -3,12 +3,12 @@ const mongoose = require('mongoose');
 const TaskSchema = new mongoose.Schema({
     title: { type: String, required: true },
     description: { type: String, required: true },
-    assignedBy: { type: Number, required: true }, // ✅ Replaced ObjectId with userId (Number)
-    assignedTo: [{ type: Number, required: true }], // ✅ Array of userId instead of ObjectId
-    category: { type: String, required: true },
+    assignedBy: { type: Number, required: true },
+    assignedTo: { type: Number, required: true },
+    /* category: { type: String, required: true },
     priority: { type: String, enum: ['High', 'Medium', 'Low'], required: true },
     dueDate: { type: Date },
-    attachments: [{ type: String }], // File paths (optional)
+    attachments: [{ type: String }], // File paths (optional) */
     createdAt: { type: Date, default: Date.now },
     status: { type: String, enum: ['pending', 'in-progress', 'completed'], default: 'pending' },
 });
