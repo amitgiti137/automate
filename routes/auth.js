@@ -45,6 +45,12 @@ router.post('/register', async (req, res) => {
 
         await user.save();
 
+        // Format the dates
+        const formatDate = (date) => new Date(date).toLocaleString('en-GB', {
+            day: '2-digit', month: '2-digit', year: 'numeric',
+            hour: '2-digit', minute: '2-digit', hour12: false
+        });
+
         res.status(201).json({
             message: 'User registered successfully!',
             userId: user.userId,
@@ -83,6 +89,12 @@ router.post('/login', async (req, res) => {
         // Generate JWT token
         const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '1h' });
 
+        // Format the dates
+        const formatDate = (date) => new Date(date).toLocaleString('en-GB', {
+            day: '2-digit', month: '2-digit', year: 'numeric',
+            hour: '2-digit', minute: '2-digit', hour12: false
+        });
+
         res.json({
             token,
             userId: user.userId,
@@ -105,6 +117,73 @@ router.post('/login', async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 });
+
+
+
+router.put('/update_user', async (req, res) => {
+    const { email, newEmail, ...updates } = req.body;
+
+    if (!email) {
+        return res.status(400).json({ status: false, message: 'Email is required to update user details' });
+    }
+
+    try {
+        const user = await User.findOne({ email });
+
+        if (!user) {
+            return res.status(404).json({ status: false, message: 'User not found' });
+        }
+
+        // If user wants to update email, check if the new email already exists
+        if (newEmail && newEmail !== email) {
+            const existingEmail = await User.findOne({ email: newEmail });
+            if (existingEmail) {
+                return res.status(400).json({ status: false, message: 'New email already in use' });
+            }
+            user.email = newEmail; // Update email
+        }
+
+        // Only update the fields provided in the request
+        Object.keys(updates).forEach((key) => {
+            if (updates[key] !== undefined) {
+                user[key] = updates[key];
+            }
+        });
+
+        await user.save();
+
+        // Format the dates
+        const formatDate = (date) => new Date(date).toLocaleString('en-GB', {
+            day: '2-digit', month: '2-digit', year: 'numeric',
+            hour: '2-digit', minute: '2-digit', hour12: false
+        });
+
+        res.json({
+            status: true,
+            message: 'User details updated successfully',
+            user: {
+                userId: user.userId,
+                vendorId: user.vendorId,
+                firstName: user.firstName,
+                lastName: user.lastName,
+                email: user.email, // Updated email
+                whatsappNumber: user.whatsappNumber,
+                role: user.role,
+                department: user.department,
+                designation: user.designation,
+                employeeCode: user.employeeCode,
+                activeStatus: user.activeStatus,
+                createdAt: formatDate(user.createdAt),
+                updatedAt: formatDate(user.updatedAt) // Updated timestamp
+            }
+        });
+    } catch (err) {
+        res.status(500).json({ status: false, message: 'Internal server error', error: err.message });
+    }
+});
+
+
+
 
 // **Get User Details by Email**
 router.get('/user_details', async (req, res) => {
