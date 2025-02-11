@@ -16,7 +16,7 @@ const formatDate = (date) => new Date(date).toLocaleString('en-GB', {
 });
 
 // Create Task
-/* router.post('/', async (req, res) => {
+router.post('/', async (req, res) => {
     const { title, description, assignedBy, assignedTo } = req.body;
     try {
         const task = new Task({ title, description, assignedBy, assignedTo });
@@ -25,10 +25,10 @@ const formatDate = (date) => new Date(date).toLocaleString('en-GB', {
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
-}); */
+});
 
 // ✅ **Create Task**
-router.post('/', verifyToken, upload.array('attachments'), async (req, res) => {
+/* router.post('/', verifyToken, upload.array('attachments'), async (req, res) => {
     const { title, description, assignedTo, category, priority, dueDate } = req.body;
     const assignedBy = req.user.userId; // Auto-assign from logged-in user
 
@@ -83,7 +83,7 @@ router.post('/', verifyToken, upload.array('attachments'), async (req, res) => {
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
-});
+}); */
 
 // Reassign Task
 router.put('/reassign/:taskId', async (req, res) => {
@@ -118,15 +118,17 @@ router.put('/reassign/:taskId', async (req, res) => {
 });
 
 // Fetch All Tasks
-/* router.get('/', async (req, res) => {
+router.get('/', async (req, res) => {
     try {
         const tasks = await Task.find().populate('assignedBy').populate('assignedTo');
         res.json(tasks);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
-}); */
-router.get('/', verifyToken, async (req, res) => {
+});
+
+
+/* router.get('/', verifyToken, async (req, res) => {
     try {
         const tasks = await Task.find()
             .populate({ path: 'assignedBy', select: 'userId firstName lastName email' })
@@ -146,7 +148,7 @@ router.get('/', verifyToken, async (req, res) => {
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
-});
+}); */
 
 // Fetch Tasks for a User
 router.get('/:userId', async (req, res) => {
