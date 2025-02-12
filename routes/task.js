@@ -16,81 +16,85 @@ const router = express.Router();
 const upload = multer({ storage: storage }); */
 
 // Create Task
-router.post('/'/* , upload.single('attachment') */, async (req, res) => {
-    const { title, description, category, priority, dueDate } = req.body;
-    const assignedBy = Number(req.body.assignedBy); // ✅ Convert to Number correctly
-    const assignedTo = req.body.assignedTo.map(Number); // ✅ Convert assignedTo to array of numbers
+router.post('/', async (req, res) => {
     try {
+        // ✅ Fix: Ensure `assignedBy` is a Number
+        const assignedBy = Number(req.body.assignedBy);
 
+        // ✅ Fix: Ensure `assignedTo` is an array of numbers
+        const assignedTo = Array.isArray(req.body.assignedTo) 
+            ? req.body.assignedTo.map(Number) 
+            : [Number(req.body.assignedTo)]; // Convert single value to array
+
+        console.log("Received Payload:", req.body); // ✅ Debugging
+        console.log("Assigned To:", assignedTo); // ✅ Debugging
 
         // ✅ Validate assignedBy user exists
         const assignedByUser = await User.findOne({ userId: assignedBy });
         if (!assignedByUser) {
-            return res.status(400).json({ error: 'AssignedBy user does not exist' });
+            return res.status(400).json({ error: "AssignedBy user does not exist" });
         }
 
         // ✅ Validate assignedTo users exist
         const assignedUsers = await User.find({ userId: { $in: assignedTo } });
         if (assignedUsers.length !== assignedTo.length) {
-            return res.status(400).json({ error: 'One or more assigned users do not exist' });
+            return res.status(400).json({ error: "One or more assigned users do not exist" });
         }
 
         // ✅ Prevent self-assignment
         if (assignedTo.includes(assignedBy)) {
-            return res.status(400).json({ error: 'You cannot assign a task to yourself' });
+            return res.status(400).json({ error: "You cannot assign a task to yourself" });
         }
 
         // ✅ Validate priority
-        const validPriorities = ['high', 'medium', 'low'];
-        if (!validPriorities.includes(priority)) {
-            return res.status(400).json({ error: 'Invalid priority value' });
+        const validPriorities = ["high", "medium", "low"];
+        if (!validPriorities.includes(req.body.priority)) {
+            return res.status(400).json({ error: "Invalid priority value" });
         }
 
-        // ✅ Validate category (Example: Departments)
-        const validCategories = ['HR', 'IT', 'Finance', 'Marketing', 'Sales'];
-        if (!validCategories.includes(category)) {
-            return res.status(400).json({ error: 'Invalid category' });
+        // ✅ Validate category
+        const validCategories = ["HR", "IT", "Finance", "Marketing", "Sales"];
+        if (!validCategories.includes(req.body.category)) {
+            return res.status(400).json({ error: "Invalid category" });
         }
 
         // ✅ Validate Due Date
-        if (!dueDate || isNaN(new Date(dueDate).getTime())) {
-            return res.status(400).json({ error: 'Invalid or missing due date' });
+        if (!req.body.dueDate || isNaN(new Date(req.body.dueDate).getTime())) {
+            return res.status(400).json({ error: "Invalid or missing due date" });
         }
 
-        // ✅ Handle File Upload
-        /* const attachment = req.file ? req.file.path : null; */
-
-        // ✅ Create task (Stores only `userId`)
-        const task = new Task({ 
-            title, 
-            description, 
-            assignedBy, 
+        // ✅ Create task
+        const task = new Task({
+            title: req.body.title,
+            description: req.body.description,
+            assignedBy,
             assignedTo,
-            category,
-            priority,
-            dueDate: new Date(dueDate),
-            /* attachment, */ 
+            category: req.body.category,
+            priority: req.body.priority,
+            dueDate: new Date(req.body.dueDate),
         });
+
         await task.save();
 
-        res.status(201).json({ 
-            message: 'Task created successfully!',
+        res.status(201).json({
+            message: "Task created successfully!",
             task: {
-                title,
-                description,
-                category,
-                priority,
-                dueDate: task.dueDate.toISOString().split('T')[0], // Format as YYYY-MM-DD
-                /* attachment: task.attachment ? `/${task.attachment}` : "No Attachment", */
+                title: task.title,
+                description: task.description,
+                category: task.category,
+                priority: task.priority,
+                dueDate: task.dueDate.toISOString().split("T")[0], // Format as YYYY-MM-DD
                 assignedBy: `${assignedByUser.firstName} ${assignedByUser.lastName} (UserID: ${assignedByUser.userId})`,
                 assignedTo: assignedUsers.map(user => `${user.firstName} ${user.lastName} (UserID: ${user.userId})`)
             }
         });
 
     } catch (err) {
+        console.error("Task creation error:", err);
         res.status(500).json({ error: err.message });
     }
 });
+
 
 // Reassign Task
 router.put('/reassign/:taskId', async (req, res) => {
