@@ -5,10 +5,10 @@ const TaskSchema = new mongoose.Schema({
     description: { type: String, required: true },
     assignedBy: { type: Number, required: true }, // ✅ Stores userId instead of ObjectId
     assignedTo: [{ type: Number, required: true }], // ✅ Supports multiple assigned users
-    category: { type: String, required: true }, // ✅ New: Task category (Department)
-    priority: { type: String, enum: ['high', 'medium', 'low'], required: true }, // ✅ New: Task priority
-    dueDate: { type: Date, required: true }, // ✅ New: Task due date
-    attachment: { type: String }, // ✅ New: Optional file attachment URL
+    /* category: { type: String, required: true },
+    priority: { type: String, enum: ['High', 'Medium', 'Low'], required: true },
+    dueDate: { type: Date },
+    attachments: [{ type: String }], // File paths (optional) */
     createdAt: { type: Date, default: Date.now },
     status: { type: String, enum: ['pending', 'in-progress', 'completed'], default: 'pending' },
 });
