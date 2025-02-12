@@ -8,7 +8,7 @@ const TaskSchema = new mongoose.Schema({
     category: { type: String, required: true }, // ✅ New: Task category (Department)
     priority: { type: String, enum: ['high', 'medium', 'low'], required: true }, // ✅ New: Task priority
     dueDate: { type: Date, required: true }, // ✅ New: Task due date
-    attachment: { type: String }, // ✅ New: Optional file attachment URL
+    /* attachment: { type: String }, */ // ✅ New: Optional file attachment URL
     createdAt: { type: Date, default: Date.now },
     status: { type: String, enum: ['pending', 'in-progress', 'completed'], default: 'pending' },
 });

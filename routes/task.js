@@ -1,11 +1,11 @@
 const express = require('express');
-const multer = require('multer');
+/* const multer = require('multer'); */
 const Task = require('../models/Task');
 const User = require('../models/User'); // Ensure User model is imported
 const router = express.Router();
 
 // Multer Storage Configuration for File Upload
-const storage = multer.diskStorage({
+/* const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         cb(null, 'uploads/'); // Save files in 'uploads' folder
     },
@@ -13,10 +13,10 @@ const storage = multer.diskStorage({
         cb(null, Date.now() + '-' + file.originalname);
     },
 });
-const upload = multer({ storage: storage });
+const upload = multer({ storage: storage }); */
 
 // Create Task
-router.post('/', upload.single('attachment'), async (req, res) => {
+router.post('/'/* , upload.single('attachment') */, async (req, res) => {
     const { title, description, assignedBy, assignedTo, category, priority, dueDate } = req.body;
     try {
         // ✅ Validate assignedBy user exists
@@ -54,7 +54,7 @@ router.post('/', upload.single('attachment'), async (req, res) => {
         }
 
         // ✅ Handle File Upload
-        const attachment = req.file ? req.file.path : null;
+        /* const attachment = req.file ? req.file.path : null; */
 
         // ✅ Create task (Stores only `userId`)
         const task = new Task({ 
@@ -65,7 +65,8 @@ router.post('/', upload.single('attachment'), async (req, res) => {
             category,
             priority,
             dueDate: new Date(dueDate),
-            attachment, });
+            /* attachment, */ 
+        });
         await task.save();
 
         res.status(201).json({ 
@@ -76,7 +77,7 @@ router.post('/', upload.single('attachment'), async (req, res) => {
                 category,
                 priority,
                 dueDate: task.dueDate.toISOString().split('T')[0], // Format as YYYY-MM-DD
-                attachment: task.attachment ? `/${task.attachment}` : "No Attachment",
+                /* attachment: task.attachment ? `/${task.attachment}` : "No Attachment", */
                 assignedBy: `${assignedByUser.firstName} ${assignedByUser.lastName} (UserID: ${assignedByUser.userId})`,
                 assignedTo: assignedUsers.map(user => `${user.firstName} ${user.lastName} (UserID: ${user.userId})`)
             }
