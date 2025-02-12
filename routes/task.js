@@ -19,6 +19,11 @@ const upload = multer({ storage: storage }); */
 router.post('/'/* , upload.single('attachment') */, async (req, res) => {
     const { title, description, assignedBy, assignedTo, category, priority, dueDate } = req.body;
     try {
+
+        // ✅ Convert assignedBy to Number
+        assignedBy = Number(assignedBy);
+        assignedTo = assignedTo.map(Number); // Convert assignedTo array values to Numbers
+
         // ✅ Validate assignedBy user exists
         const assignedByUser = await User.findOne({ userId: assignedBy });
         if (!assignedByUser) {
