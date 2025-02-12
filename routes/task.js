@@ -1,11 +1,23 @@
 const express = require('express');
+const multer = require('multer');
 const Task = require('../models/Task');
 const User = require('../models/User'); // Ensure User model is imported
 const router = express.Router();
 
+// Multer Storage Configuration for File Upload
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, 'uploads/'); // Save files in 'uploads' folder
+    },
+    filename: (req, file, cb) => {
+        cb(null, Date.now() + '-' + file.originalname);
+    },
+});
+const upload = multer({ storage: storage });
+
 // Create Task
-router.post('/', async (req, res) => {
-    const { title, description, assignedBy, assignedTo } = req.body;
+router.post('/', upload.single('attachment'), async (req, res) => {
+    const { title, description, assignedBy, assignedTo, category, priority, dueDate } = req.body;
     try {
         // ✅ Validate assignedBy user exists
         const assignedByUser = await User.findOne({ userId: assignedBy });
@@ -24,8 +36,36 @@ router.post('/', async (req, res) => {
             return res.status(400).json({ error: 'You cannot assign a task to yourself' });
         }
 
+        // ✅ Validate priority
+        const validPriorities = ['high', 'medium', 'low'];
+        if (!validPriorities.includes(priority)) {
+            return res.status(400).json({ error: 'Invalid priority value' });
+        }
+
+        // ✅ Validate category (Example: Departments)
+        const validCategories = ['HR', 'IT', 'Finance', 'Marketing', 'Sales'];
+        if (!validCategories.includes(category)) {
+            return res.status(400).json({ error: 'Invalid category' });
+        }
+
+        // ✅ Validate Due Date
+        if (!dueDate || isNaN(new Date(dueDate).getTime())) {
+            return res.status(400).json({ error: 'Invalid or missing due date' });
+        }
+
+        // ✅ Handle File Upload
+        const attachment = req.file ? req.file.path : null;
+
         // ✅ Create task (Stores only `userId`)
-        const task = new Task({ title, description, assignedBy, assignedTo });
+        const task = new Task({ 
+            title, 
+            description, 
+            assignedBy, 
+            assignedTo,
+            category,
+            priority,
+            dueDate: new Date(dueDate),
+            attachment, });
         await task.save();
 
         res.status(201).json({ 
