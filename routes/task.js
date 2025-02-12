@@ -17,12 +17,11 @@ const upload = multer({ storage: storage }); */
 
 // Create Task
 router.post('/'/* , upload.single('attachment') */, async (req, res) => {
-    const { title, description, assignedBy, assignedTo, category, priority, dueDate } = req.body;
+    const { title, description, category, priority, dueDate } = req.body;
+    const assignedBy = Number(req.body.assignedBy); // ✅ Convert to Number correctly
+    const assignedTo = req.body.assignedTo.map(Number); // ✅ Convert assignedTo to array of numbers
     try {
 
-        // ✅ Convert assignedBy to Number
-        assignedBy = Number(assignedBy);
-        assignedTo = assignedTo.map(Number); // Convert assignedTo array values to Numbers
 
         // ✅ Validate assignedBy user exists
         const assignedByUser = await User.findOne({ userId: assignedBy });
