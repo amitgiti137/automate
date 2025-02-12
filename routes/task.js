@@ -73,6 +73,10 @@ router.post('/', upload.single('attachment'), async (req, res) => {
             task: {
                 title,
                 description,
+                category,
+                priority,
+                dueDate: task.dueDate.toISOString().split('T')[0], // Format as YYYY-MM-DD
+                attachment: task.attachment ? `/${task.attachment}` : "No Attachment",
                 assignedBy: `${assignedByUser.firstName} ${assignedByUser.lastName} (UserID: ${assignedByUser.userId})`,
                 assignedTo: assignedUsers.map(user => `${user.firstName} ${user.lastName} (UserID: ${user.userId})`)
             }
