@@ -175,6 +175,11 @@ router.put("/reassign/:taskId", async (req, res) => {
 // Function to determine task status based on due date
 const getTaskStatus = (task) => {
     const currentDate = new Date();
+
+    if (!task.dueDate) {
+        return "No Due Date"; // If dueDate is missing, return this instead of crashing
+    }
+
     const dueDate = new Date(task.dueDate);
     
     if (task.status === "completed") {
@@ -212,7 +217,7 @@ router.get('/', async (req, res) => {
                 assignedTo: assignedToUsers.length > 0
                     ? assignedToUsers.map(user => ({ userId: user.userId, name: `${user.firstName} ${user.lastName}` }))
                     : [{ userId: null, name: "Unknown" }],
-                dueDate: task.dueDate.toISOString().split("T")[0], // YYYY-MM-DD format
+                dueDate: task.dueDate ? task.dueDate.toISOString().split("T")[0] : "No Due Date", // YYYY-MM-DD format
                 status: getTaskStatus(task), // Dynamically determine status
                 createdAt: task.createdAt.toLocaleString('en-GB', { timeZone: 'Asia/Kolkata' })
             };
@@ -280,7 +285,7 @@ router.get('/assigned-by/:userId', async (req, res) => {
                 assignedTo: assignedToUsers.length > 0
                     ? assignedToUsers.map(user => ({ userId: user.userId, name: `${user.firstName} ${user.lastName}` }))
                     : [{ userId: null, name: "Unknown" }],
-                dueDate: task.dueDate.toISOString().split("T")[0], // YYYY-MM-DD format
+                dueDate: task.dueDate ? task.dueDate.toISOString().split("T")[0] : "No Due Date", // YYYY-MM-DD format
                 status: getTaskStatus(task), // Dynamically determine status
                 createdAt: task.createdAt.toLocaleString('en-GB', { timeZone: 'Asia/Kolkata' })
             };
@@ -314,7 +319,8 @@ router.get('/assigned-to/:userId', async (req, res) => {
                 assignedBy: assignedByUser
                     ? { userId: assignedByUser.userId, name: `${assignedByUser.firstName} ${assignedByUser.lastName}` }
                     : { userId: null, name: "Unknown" },
-                status: task.status,
+                dueDate: task.dueDate ? task.dueDate.toISOString().split("T")[0] : "No Due Date", // YYYY-MM-DD format
+                status: getTaskStatus(task), // Dynamically determine status
                 createdAt: task.createdAt.toLocaleString('en-GB', { timeZone: 'Asia/Kolkata' })
             };
         }));
@@ -359,7 +365,8 @@ router.get('/task/:taskId', async (req, res) => {
             assignedTo: assignedToUsers.length > 0
                 ? assignedToUsers.map(user => ({ userId: user.userId, name: `${user.firstName} ${user.lastName}` }))
                 : [{ userId: null, name: "Unknown" }],
-            status: task.status,
+            dueDate: task.dueDate ? task.dueDate.toISOString().split("T")[0] : "No Due Date", // YYYY-MM-DD format
+            status: getTaskStatus(task), // Dynamically determine status
             createdAt: task.createdAt.toLocaleString('en-GB', { timeZone: 'Asia/Kolkata' })
         };
 
