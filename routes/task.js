@@ -109,20 +109,15 @@ router.put('/reassign/:taskId', async (req, res) => {
         }
 
         // ✅ Ensure `newAssignedTo` is always a number (UserID)
-        if (Array.isArray(newAssignedTo)) {
-            newAssignedTo = Number(newAssignedTo[0]); // Extract first value
-        } else {
-            newAssignedTo = Number(newAssignedTo);
+        if (!Array.isArray(newAssignedTo)) {
+            newAssignedTo = [newAssignedTo]; // Convert single value to array
         }
-
-        if (isNaN(newAssignedTo)) {
-            return res.status(400).json({ error: "Invalid newAssignedTo user ID format" });
-        }
+        newAssignedTo = newAssignedTo.map(Number); // Ensure all values are numbers
 
         // ✅ Ensure the new assigned user exists
-        const newAssignee = await User.findOne({ userId: newAssignedTo });
-        if (!newAssignee) {
-            return res.status(404).json({ error: 'New assignee not found' });
+        const assignedUsers = await User.find({ userId: { $in: newAssignedTo } }, 'userId firstName lastName');
+        if (assignedUsers.length !== newAssignedTo.length) {
+            return res.status(400).json({ error: "One or more assigned users do not exist" });
         }
 
         // ✅ Fetch the task and validate existence
