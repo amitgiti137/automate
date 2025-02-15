@@ -1,5 +1,6 @@
 const express = require('express');
 /* const multer = require('multer'); */
+const mongoose = require('mongoose'); // Ensure mongoose is imported
 const Task = require('../models/Task');
 const User = require('../models/User'); // Ensure User model is imported
 const router = express.Router();
