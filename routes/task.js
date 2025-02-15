@@ -98,7 +98,7 @@ router.post('/', async (req, res) => {
 
 
 // Reassign Task
-router.put('/reassign/:taskId', async (req, res) => {
+router.put("/reassign/:taskId", async (req, res) => {
     const { taskId } = req.params;
     let { newAssignedTo } = req.body;
 
@@ -108,58 +108,68 @@ router.put('/reassign/:taskId', async (req, res) => {
             return res.status(400).json({ error: "Invalid Task ID format" });
         }
 
-        // ✅ Ensure `newAssignedTo` is always a number (UserID)
+        // ✅ Ensure `newAssignedTo` is an **array of numbers**
         if (!Array.isArray(newAssignedTo)) {
-            newAssignedTo = [newAssignedTo]; // Convert single value to array
+            return res.status(400).json({ error: "newAssignedTo must be an array of user IDs" });
         }
-        newAssignedTo = newAssignedTo.map(Number); // Ensure all values are numbers
 
-        // ✅ Ensure the new assigned user exists
-        const assignedUsers = await User.find({ userId: { $in: newAssignedTo } }, 'userId firstName lastName');
+        // ✅ Flatten any nested arrays (Fixing your issue)
+        newAssignedTo = newAssignedTo.flat().map(Number);
+
+        // ✅ Validate all user IDs are numbers
+        if (newAssignedTo.some(isNaN)) {
+            return res.status(400).json({ error: "Invalid user ID format in newAssignedTo" });
+        }
+
+        // ✅ Ensure the new assigned users exist
+        const assignedUsers = await User.find({ userId: { $in: newAssignedTo } }, "userId firstName lastName");
         if (assignedUsers.length !== newAssignedTo.length) {
-            return res.status(400).json({ error: "One or more assigned users do not exist" });
+            return res.status(404).json({ error: "One or more assigned users not found" });
         }
 
         // ✅ Fetch the task and validate existence
         const task = await Task.findById(taskId);
         if (!task) {
-            return res.status(404).json({ error: 'Task not found' });
+            return res.status(404).json({ error: "Task not found" });
         }
 
         // ✅ Prevent assigning the same user again
-        if (task.assignedTo.includes(newAssignedTo)) {
-            return res.status(400).json({ error: "Task is already assigned to this user" });
+        const existingAssignedTo = new Set(task.assignedTo.map(Number));
+        const uniqueNewAssignedTo = newAssignedTo.filter(userId => !existingAssignedTo.has(userId));
+
+        if (uniqueNewAssignedTo.length === 0) {
+            return res.status(400).json({ error: "Task is already assigned to these users" });
         }
 
         // ✅ Prevent assigning task to the same user who created it
-        if (task.assignedBy === newAssignedTo) {
-            return res.status(400).json({ error: "You cannot assign a task to yourself" });
+        if (uniqueNewAssignedTo.includes(task.assignedBy)) {
+            return res.status(400).json({ error: "You cannot assign a task to the creator" });
         }
 
-        // ✅ Update the task with the new assignee
-        task.assignedTo = [newAssignedTo]; // Reassign to the new user
+        // ✅ Update the task with new assignees
+        task.assignedTo = [...new Set([...task.assignedTo.map(Number), ...uniqueNewAssignedTo])];
         await task.save();
 
         // ✅ Fetch assignedBy user details
-        const assignedByUser = await User.findOne({ userId: task.assignedBy }, 'firstName lastName userId');
+        const assignedByUser = await User.findOne({ userId: task.assignedBy }, "firstName lastName userId");
 
-        // ✅ Fetch new assignedTo user details
-        const assignedToUser = await User.findOne({ userId: newAssignedTo }, 'firstName lastName userId');
+        // ✅ Format response with updated assigned users
+        const updatedAssignedToUsers = await User.find({ userId: { $in: task.assignedTo } }, "firstName lastName userId");
 
-        // ✅ Format the response
         res.json({
-            message: 'Task reassigned successfully!',
+            message: "Task reassigned successfully!",
             task: {
                 title: task.title,
                 description: task.description,
                 assignedBy: assignedByUser
                     ? { userId: assignedByUser.userId, name: `${assignedByUser.firstName} ${assignedByUser.lastName}` }
                     : { userId: null, name: "Unknown" },
-                assignedTo: assignedToUser
-                    ? { userId: assignedToUser.userId, name: `${assignedToUser.firstName} ${assignedToUser.lastName}` }
-                    : { userId: null, name: "Unknown" },
+                assignedTo: updatedAssignedToUsers.map(user => ({
+                    userId: user.userId,
+                    name: `${user.firstName} ${user.lastName}`
+                })),
                 status: task.status,
-                createdAt: task.createdAt.toLocaleString('en-GB', { timeZone: 'Asia/Kolkata' })
+                createdAt: task.createdAt.toLocaleString("en-GB", { timeZone: "Asia/Kolkata" }),
             }
         });
 
