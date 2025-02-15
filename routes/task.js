@@ -282,24 +282,29 @@ router.get('/assigned-to/:userId', async (req, res) => {
 });
 
 
-router.get('/:taskId', async (req, res) => {
+router.get('/task/:taskId', async (req, res) => {
     const { taskId } = req.params;
 
     try {
-        // Find the task by ID
+        // ✅ Fix: Convert `taskId` to a valid MongoDB ObjectId
+        if (!mongoose.Types.ObjectId.isValid(taskId)) {
+            return res.status(400).json({ error: "Invalid Task ID format" });
+        }
+
+        // ✅ Fetch the task by ID
         const task = await Task.findById(taskId);
 
         if (!task) {
             return res.status(404).json({ error: "Task not found" });
         }
 
-        // Fetch assignedBy user details
+        // ✅ Fetch assignedBy user details
         const assignedByUser = await User.findOne({ userId: task.assignedBy.toString() }, 'firstName lastName userId');
 
-        // Fetch assignedTo user details
+        // ✅ Fetch assignedTo user details (if multiple, return array)
         const assignedToUsers = await User.find({ userId: { $in: task.assignedTo.map(String) } }, 'firstName lastName userId');
 
-        // Format response
+        // ✅ Format the response
         const formattedTask = {
             _id: task._id,
             title: task.title,
@@ -316,6 +321,7 @@ router.get('/:taskId', async (req, res) => {
 
         res.json(formattedTask);
     } catch (err) {
+        console.error("Error fetching task by ID:", err);
         res.status(500).json({ error: err.message });
     }
 });
