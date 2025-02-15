@@ -215,4 +215,111 @@ router.get('/:userId', async (req, res) => {
     }
 });
 
+router.get('/assigned-by/:userId', async (req, res) => {
+    const { userId } = req.params;
+
+    try {
+        // Find all tasks where the user is the one who assigned the task
+        const tasks = await Task.find({ assignedBy: userId });
+
+        if (!tasks.length) {
+            return res.status(404).json({ error: "No tasks found assigned by this user" });
+        }
+
+        // Format response
+        const formattedTasks = await Promise.all(tasks.map(async (task) => {
+            const assignedToUsers = await User.find({ userId: { $in: task.assignedTo } }, 'firstName lastName userId');
+
+            return {
+                _id: task._id,
+                title: task.title,
+                description: task.description,
+                assignedTo: assignedToUsers.length > 0
+                    ? assignedToUsers.map(user => ({ userId: user.userId, name: `${user.firstName} ${user.lastName}` }))
+                    : [{ userId: null, name: "Unknown" }],
+                status: task.status,
+                createdAt: task.createdAt.toLocaleString('en-GB', { timeZone: 'Asia/Kolkata' })
+            };
+        }));
+
+        res.json(formattedTasks);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+router.get('/assigned-to/:userId', async (req, res) => {
+    const { userId } = req.params;
+
+    try {
+        // Find tasks assigned to this user
+        const tasks = await Task.find({ assignedTo: userId });
+
+        if (!tasks.length) {
+            return res.status(404).json({ error: "No tasks found assigned to this user" });
+        }
+
+        // Format response
+        const formattedTasks = await Promise.all(tasks.map(async (task) => {
+            const assignedByUser = await User.findOne({ userId: task.assignedBy }, 'firstName lastName userId');
+
+            return {
+                _id: task._id,
+                title: task.title,
+                description: task.description,
+                assignedBy: assignedByUser
+                    ? { userId: assignedByUser.userId, name: `${assignedByUser.firstName} ${assignedByUser.lastName}` }
+                    : { userId: null, name: "Unknown" },
+                status: task.status,
+                createdAt: task.createdAt.toLocaleString('en-GB', { timeZone: 'Asia/Kolkata' })
+            };
+        }));
+
+        res.json(formattedTasks);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+
+router.get('/:taskId', async (req, res) => {
+    const { taskId } = req.params;
+
+    try {
+        // Find the task by ID
+        const task = await Task.findById(taskId);
+
+        if (!task) {
+            return res.status(404).json({ error: "Task not found" });
+        }
+
+        // Fetch assignedBy user details
+        const assignedByUser = await User.findOne({ userId: task.assignedBy }, 'firstName lastName userId');
+
+        // Fetch assignedTo user details
+        const assignedToUsers = await User.find({ userId: { $in: task.assignedTo } }, 'firstName lastName userId');
+
+        // Format response
+        const formattedTask = {
+            _id: task._id,
+            title: task.title,
+            description: task.description,
+            assignedBy: assignedByUser
+                ? { userId: assignedByUser.userId, name: `${assignedByUser.firstName} ${assignedByUser.lastName}` }
+                : { userId: null, name: "Unknown" },
+            assignedTo: assignedToUsers.length > 0
+                ? assignedToUsers.map(user => ({ userId: user.userId, name: `${user.firstName} ${user.lastName}` }))
+                : [{ userId: null, name: "Unknown" }],
+            status: task.status,
+            createdAt: task.createdAt.toLocaleString('en-GB', { timeZone: 'Asia/Kolkata' })
+        };
+
+        res.json(formattedTask);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+
+
 module.exports = router;
