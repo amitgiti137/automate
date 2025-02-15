@@ -294,10 +294,10 @@ router.get('/:taskId', async (req, res) => {
         }
 
         // Fetch assignedBy user details
-        const assignedByUser = await User.findOne({ userId: task.assignedBy }, 'firstName lastName userId');
+        const assignedByUser = await User.findOne({ userId: task.assignedBy.toString() }, 'firstName lastName userId');
 
         // Fetch assignedTo user details
-        const assignedToUsers = await User.find({ userId: { $in: task.assignedTo } }, 'firstName lastName userId');
+        const assignedToUsers = await User.find({ userId: { $in: task.assignedTo.map(String) } }, 'firstName lastName userId');
 
         // Format response
         const formattedTask = {
