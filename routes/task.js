@@ -149,7 +149,7 @@ router.put("/reassign/:taskId", async (req, res) => {
         const updatedAssignedToUsers = await User.find({ userId: { $in: task.assignedTo } }, "firstName lastName userId");
 
         res.json({
-            message: "Task reassigned successfully! Previous assignees removed.",
+            message: "Task reassigned successfully!",
             task: {
                 title: task.title,
                 description: task.description,
@@ -170,6 +170,23 @@ router.put("/reassign/:taskId", async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 });
+
+
+// Function to determine task status based on due date
+const getTaskStatus = (task) => {
+    const currentDate = new Date();
+    const dueDate = new Date(task.dueDate);
+    
+    if (task.status === "completed") {
+        return "Completed";
+    } else if (dueDate < currentDate) {
+        return "Overdue"; // If due date is passed and task is not completed
+    } else if (task.status === "in-progress") {
+        return "In Progress"; // If task is being worked on
+    } else {
+        return "Pending"; // Default state before the due date
+    }
+};
 
 
 
@@ -195,7 +212,8 @@ router.get('/', async (req, res) => {
                 assignedTo: assignedToUsers.length > 0
                     ? assignedToUsers.map(user => ({ userId: user.userId, name: `${user.firstName} ${user.lastName}` }))
                     : [{ userId: null, name: "Unknown" }],
-                status: task.status,
+                dueDate: task.dueDate.toISOString().split("T")[0], // YYYY-MM-DD format
+                status: getTaskStatus(task), // Dynamically determine status
                 createdAt: task.createdAt.toLocaleString('en-GB', { timeZone: 'Asia/Kolkata' })
             };
         }));
@@ -262,7 +280,8 @@ router.get('/assigned-by/:userId', async (req, res) => {
                 assignedTo: assignedToUsers.length > 0
                     ? assignedToUsers.map(user => ({ userId: user.userId, name: `${user.firstName} ${user.lastName}` }))
                     : [{ userId: null, name: "Unknown" }],
-                status: task.status,
+                dueDate: task.dueDate.toISOString().split("T")[0], // YYYY-MM-DD format
+                status: getTaskStatus(task), // Dynamically determine status
                 createdAt: task.createdAt.toLocaleString('en-GB', { timeZone: 'Asia/Kolkata' })
             };
         }));
