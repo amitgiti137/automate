@@ -103,51 +103,78 @@ router.put('/reassign/:taskId', async (req, res) => {
     let { newAssignedTo } = req.body;
 
     try {
-
-        // ✅ Ensure newAssignedTo is always an array and extract the first value
-        if (Array.isArray(newAssignedTo)) {
-            newAssignedTo = newAssignedTo[0]; // Extract first value
+        // ✅ Validate taskId is a valid ObjectId
+        if (!mongoose.Types.ObjectId.isValid(taskId)) {
+            return res.status(400).json({ error: "Invalid Task ID format" });
         }
 
-        // Ensure the new assigned user exists
-        const newAssignee = await User.findById({ userId: Number(newAssignedTo) });
+        // ✅ Ensure `newAssignedTo` is always a number (UserID)
+        if (Array.isArray(newAssignedTo)) {
+            newAssignedTo = Number(newAssignedTo[0]); // Extract first value
+        } else {
+            newAssignedTo = Number(newAssignedTo);
+        }
+
+        if (isNaN(newAssignedTo)) {
+            return res.status(400).json({ error: "Invalid newAssignedTo user ID format" });
+        }
+
+        // ✅ Ensure the new assigned user exists
+        const newAssignee = await User.findOne({ userId: newAssignedTo });
         if (!newAssignee) {
             return res.status(404).json({ error: 'New assignee not found' });
         }
 
-        // Update the task with the new assignee
-        const updatedTask = await Task.findByIdAndUpdate(
-            taskId,
-            { assignedTo: Number(newAssignedTo) },
-            { new: true }
-        );
-
-        if (!updatedTask) {
+        // ✅ Fetch the task and validate existence
+        const task = await Task.findById(taskId);
+        if (!task) {
             return res.status(404).json({ error: 'Task not found' });
         }
 
-        // ✅ Convert assignedBy and assignedTo userIds to names for the response
-        const assignedByUser = await User.findOne({ userId: Number(updatedTask.assignedBy) }, 'firstName lastName');
-        const assignedToUser = await User.findOne({ userId: Number(updatedTask.assignedTo) }, 'firstName lastName');
+        // ✅ Prevent assigning the same user again
+        if (task.assignedTo.includes(newAssignedTo)) {
+            return res.status(400).json({ error: "Task is already assigned to this user" });
+        }
 
+        // ✅ Prevent assigning task to the same user who created it
+        if (task.assignedBy === newAssignedTo) {
+            return res.status(400).json({ error: "You cannot assign a task to yourself" });
+        }
+
+        // ✅ Update the task with the new assignee
+        task.assignedTo = [newAssignedTo]; // Reassign to the new user
+        await task.save();
+
+        // ✅ Fetch assignedBy user details
+        const assignedByUser = await User.findOne({ userId: task.assignedBy }, 'firstName lastName userId');
+
+        // ✅ Fetch new assignedTo user details
+        const assignedToUser = await User.findOne({ userId: newAssignedTo }, 'firstName lastName userId');
+
+        // ✅ Format the response
         res.json({
             message: 'Task reassigned successfully!',
             task: {
-                title: updatedTask.title,
-                description: updatedTask.description,
+                title: task.title,
+                description: task.description,
                 assignedBy: assignedByUser
-                    ? `${assignedByUser.firstName} ${assignedByUser.lastName}`
-                    : "Unknown",
+                    ? { userId: assignedByUser.userId, name: `${assignedByUser.firstName} ${assignedByUser.lastName}` }
+                    : { userId: null, name: "Unknown" },
                 assignedTo: assignedToUser
-                    ? `${assignedToUser.firstName} ${assignedToUser.lastName}`
-                    : "Unknown",
-                createdAt: updatedTask.createdAt.toLocaleString('en-GB', { timeZone: 'Asia/Kolkata' })
+                    ? { userId: assignedToUser.userId, name: `${assignedToUser.firstName} ${assignedToUser.lastName}` }
+                    : { userId: null, name: "Unknown" },
+                status: task.status,
+                createdAt: task.createdAt.toLocaleString('en-GB', { timeZone: 'Asia/Kolkata' })
             }
         });
+
     } catch (err) {
+        console.error("Error reassigning task:", err);
         res.status(500).json({ error: err.message });
     }
 });
+
+
 
 // Fetch All Tasks
 router.get('/', async (req, res) => {
@@ -183,7 +210,7 @@ router.get('/', async (req, res) => {
 });
 
 // Fetch Tasks for a User
-router.get('/:userId', async (req, res) => {
+/* router.get('/:userId', async (req, res) => {
     const { userId } = req.params;
     try {
         const tasks = await Task.find({ assignedTo: userId });
@@ -214,7 +241,7 @@ router.get('/:userId', async (req, res) => {
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
-});
+}); */
 
 router.get('/assigned-by/:userId', async (req, res) => {
     const { userId } = req.params;
