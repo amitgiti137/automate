@@ -12,7 +12,7 @@ router.post('/register-admin', async (req, res) => {
     }
 
     try {
-        // AdminModel will handle vendorId and employeeId generation
+        // ✅ Create the admin (admin model handles vendorId generation)
         const newAdmin = new (AdminModel("admins"))({
             firstName,
             lastName,
@@ -36,6 +36,7 @@ router.post('/register-admin', async (req, res) => {
         });
 
     } catch (err) {
+        console.error("Error in register-admin route:", err);
         res.status(500).json({ error: err.message });
     }
 });

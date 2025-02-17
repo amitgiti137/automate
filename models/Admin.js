@@ -15,21 +15,25 @@ const AdminSchema = new mongoose.Schema({
     activeStatus: { type: String, required: true },
 }, { timestamps: true });
 
-// ✅ Auto-generate `vendorId` and `employeeId` for Admins
+// ✅ Auto-generate vendorId & employeeId before saving
 AdminSchema.pre('validate', async function (next) {
     try {
+        // Check if any admin exists in "admins" collection
         const lastAdmin = await mongoose.connection.db.collection("admins").findOne({}, { sort: { vendorId: -1 } });
 
         if (!lastAdmin) {
-            this.vendorId = 1001; // First admin
+            console.log("No admin exists, setting first admin defaults...");
+            this.vendorId = 1001; // First admin starts at 1001
             this.employeeId = 10001; // First admin's employeeId
         } else {
-            this.vendorId = lastAdmin.vendorId + 1; // 1001 → 1002 → 1003 ...
-            this.employeeId = this.vendorId * 10000 + 1; // 10001 → 20001 → 30001 ...
+            console.log("Last admin found, setting next vendorId...");
+            this.vendorId = lastAdmin.vendorId + 1; // Increment vendorId (1001 → 1002 → 1003)
+            this.employeeId = this.vendorId * 10000 + 1; // Employee ID (10001 → 20001 → 30001)
         }
 
         next();
     } catch (error) {
+        console.error("Error generating vendorId:", error);
         return next(error);
     }
 });
