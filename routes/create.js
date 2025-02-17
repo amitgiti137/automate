@@ -11,7 +11,7 @@ const EMPLOYEE_INCREMENT = 10000;
 
 // **Register Admin**
 router.post('/register-admin', async (req, res) => {
-    const { vendorId, firstName, lastName, email, password, whatsappNumber, department, designation, employeeCode, activeStatus } = req.body;
+    const { firstName, lastName, email, password, whatsappNumber, department, designation, employeeCode, activeStatus } = req.body;
 
     if (!firstName || !lastName || !email || !password || !whatsappNumber || !department || !designation || !employeeCode || !activeStatus) {
         return res.status(400).json({ error: 'All fields are required' });
@@ -20,36 +20,20 @@ router.post('/register-admin', async (req, res) => {
     try {
         let newVendorId, newEmployeeId;
 
-        if (!vendorId) {
-            // Registering a new Admin (without vendorId)
-            const lastAdmin = await AdminModel("admins").findOne().sort({ vendorId: -1 });
+        // Find the last registered admin to determine new vendorId and employeeId
+        const lastAdmin = await AdminModel("admins").findOne().sort({ vendorId: -1 });
 
-            if (!lastAdmin) {
-                // First Admin (Start with defaults)
-                newVendorId = 1001;
-                newEmployeeId = 10001;
-            } else {
-                // Generate next sequence
-                newVendorId = lastAdmin.vendorId + 1;  // 1001 -> 1002 -> 1003 ...
-                newEmployeeId = lastAdmin.employeeId + 10000; // 10001 -> 20001 -> 30001 ...
-            }
-
+        if (!lastAdmin) {
+            // First Admin (Start with default values)
+            newVendorId = 1001;
+            newEmployeeId = 10001;
         } else {
-            // If vendorId is provided, check if it exists
-            const existingAdmin = await AdminModel(`admin${vendorId}`).findOne({ vendorId });
-
-            if (!existingAdmin) {
-                return res.status(400).json({ error: 'Invalid vendorId. No existing collection found.' });
-            }
-
-            // Assign same vendorId but generate next employeeId in the same collection
-            const lastEmployee = await EmployeeModel(`admin${vendorId}`).findOne().sort({ employeeId: -1 });
-
-            newVendorId = vendorId;
-            newEmployeeId = lastEmployee ? lastEmployee.employeeId + 1 : vendorId * 10000 + 1;  // Continue employee ID sequence
+            // Generate next `vendorId` and `employeeId` sequence
+            newVendorId = lastAdmin.vendorId + 1;  // 1001 → 1002 → 1003 ...
+            newEmployeeId = (lastAdmin.vendorId + 1) * 10000 + 1; // 10001 → 20001 → 30001 ...
         }
 
-        // Create a new collection for the admin if it's a new vendor
+        // Create a unique collection for the new admin
         const collectionName = `admin${newVendorId}`;
         const Admin = AdminModel(collectionName);
 
@@ -82,6 +66,7 @@ router.post('/register-admin', async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 });
+
 
 
 // **Register Employee**
