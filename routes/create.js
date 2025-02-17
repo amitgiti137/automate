@@ -3,12 +3,13 @@ const AdminModel = require('../models/Admin');
 const EmployeeModel = require('../models/Employee');
 const router = express.Router();
 
-// Start values
+// Constants for Vendor & Employee Sequences
 const START_VENDOR_ID = 1001;
-const START_ADMIN_ID = 1001;
 const START_EMPLOYEE_ID = 10001;
+const VENDOR_INCREMENT = 1;
+const EMPLOYEE_INCREMENT = 10000;
 
-// **Register Admin (Admin is Also an Employee)**
+// **Register Admin**
 router.post('/register-admin', async (req, res) => {
     const { firstName, lastName, email, password, whatsappNumber, department, designation, employeeCode, activeStatus } = req.body;
 
@@ -17,32 +18,27 @@ router.post('/register-admin', async (req, res) => {
     }
 
     try {
-        // Find the last registered admin
+        // Find last admin to determine new vendorId and employeeId
         const lastAdmin = await AdminModel("admins").findOne().sort({ vendorId: -1 });
 
-        let newVendorId, newAdminId, newEmployeeId;
-
+        let newVendorId, newEmployeeId;
         if (!lastAdmin) {
-            // First Admin Registration
+            // First Admin (Start from default values)
             newVendorId = START_VENDOR_ID;
-            newAdminId = START_ADMIN_ID;
             newEmployeeId = START_EMPLOYEE_ID;
         } else {
-            // Next Admin Registration
-            newVendorId = lastAdmin.vendorId + 1000;  // 1001 -> 2001 -> 3001 ...
-            newAdminId = lastAdmin.adminId + 1000;    // 1001 -> 2001 -> 3001 ...
-            newEmployeeId = lastAdmin.employeeId + 10000; // 10001 -> 20001 -> 30001 ...
+            // Generate next sequence
+            newVendorId = lastAdmin.vendorId + VENDOR_INCREMENT;
+            newEmployeeId = lastAdmin.employeeId + EMPLOYEE_INCREMENT;
         }
 
-        // Create a unique collection name for each admin
-        const newCollectionName = `admin${newAdminId}`;
+        // Create a unique collection for new vendorId
+        const collectionName = `admin${newVendorId}`;
+        const Admin = AdminModel(collectionName);
 
-        // Register the new admin (who is also an employee)
-        const Admin = AdminModel(newCollectionName);
         const newAdmin = new Admin({
             vendorId: newVendorId,
-            adminId: newAdminId,
-            employeeId: newEmployeeId, // Admin is also Employee
+            employeeId: newEmployeeId,
             firstName,
             lastName,
             email,
@@ -59,9 +55,8 @@ router.post('/register-admin', async (req, res) => {
 
         res.status(201).json({
             message: 'Admin registered successfully!',
-            collection: newCollectionName,
+            collection: collectionName,
             vendorId: newVendorId,
-            adminId: newAdminId,
             employeeId: newEmployeeId,
             email: newAdmin.email
         });
@@ -71,36 +66,31 @@ router.post('/register-admin', async (req, res) => {
     }
 });
 
-// **Register Employee (First Employee Becomes Admin, Others Employees)**
+// **Register Employee**
 router.post('/register-employee', async (req, res) => {
-    const { vendorId, adminId, firstName, lastName, email, password, whatsappNumber, department, designation, employeeCode, activeStatus } = req.body;
+    const { vendorId, firstName, lastName, email, password, whatsappNumber, department, designation, employeeCode, activeStatus } = req.body;
 
-    if (!vendorId || !adminId || !firstName || !lastName || !email || !password || !whatsappNumber || !department || !designation || !employeeCode || !activeStatus) {
+    if (!vendorId || !firstName || !lastName || !email || !password || !whatsappNumber || !department || !designation || !employeeCode || !activeStatus) {
         return res.status(400).json({ error: 'All fields are required' });
     }
 
     try {
-        // Find the Admin's Collection
-        const admin = await AdminModel("admins").findOne({ vendorId, adminId });
-        if (!admin) {
-            return res.status(404).json({ error: 'Admin not found for given vendorId and adminId' });
+        // Determine correct admin collection
+        const collectionName = `admin${vendorId}`;
+        const Employee = EmployeeModel(collectionName);
+        const lastEmployee = await Employee.findOne().sort({ employeeId: -1 });
+
+        if (!lastEmployee) {
+            return res.status(404).json({ error: 'Admin not found for given vendorId' });
         }
 
-        // Use the admin's collection name for employees
-        const collectionName = `admin${admin.adminId}`;
-        const Employee = EmployeeModel(collectionName);
+        // Generate Employee ID
+        const newEmployeeId = lastEmployee.employeeId + 1;
+        const employeeRole = (newEmployeeId === lastEmployee.employeeId + 1) ? 'admin' : 'employee';
 
-        // Get last employee ID
-        const lastEmployee = await Employee.findOne().sort({ employeeId: -1 });
-        const newEmployeeId = lastEmployee ? lastEmployee.employeeId + 1 : admin.employeeId + 1;
-
-        // First Employee under Admin gets **Admin Role**
-        const employeeRole = (newEmployeeId === admin.employeeId + 1) ? 'admin' : 'employee';
-
-        // Register the employee
+        // Create Employee in the same Admin collection
         const newEmployee = new Employee({
             vendorId,
-            adminId,
             employeeId: newEmployeeId,
             firstName,
             lastName,
@@ -121,7 +111,6 @@ router.post('/register-employee', async (req, res) => {
             collection: collectionName,
             employeeId: newEmployeeId,
             vendorId,
-            adminId,
             role: employeeRole,
             email: newEmployee.email
         });

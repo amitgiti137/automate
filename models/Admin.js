@@ -2,8 +2,7 @@ const mongoose = require('mongoose');
 
 const AdminSchema = new mongoose.Schema({
     vendorId: { type: Number, unique: true, required: true },
-    adminId: { type: Number, unique: true, required: true },
-    employeeId: { type: Number, unique: true, required: true }, // Admin's Employee ID
+    employeeId: { type: Number, unique: true, required: true },
     firstName: { type: String, required: true },
     lastName: { type: String, required: true },
     email: { type: String, unique: true, required: true },
