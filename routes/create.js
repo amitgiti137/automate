@@ -28,7 +28,7 @@ router.post('/register-admin', async (req, res) => {
         await newAdmin.save();
 
         // ✅ Correctly create the collection before responding
-        const collectionName = `admin${newAdmin.vendorId}`;
+        const collectionName = `admin${newAdmin.vendorId - 1000}`;
         const AdminCollection = AdminModel(collectionName);
 
         res.status(201).json({

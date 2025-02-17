@@ -31,15 +31,22 @@ AdminSchema.pre('validate', async function (next) {
             this.employeeId = this.vendorId * 10000 + 1; // 10001 → 20001 → 30001
         }
 
-        // ✅ Ensure collection exists before saving
-        const collectionName = `admin${this.vendorId}`;
-        if (!mongoose.connection.models[collectionName]) {
-            mongoose.model(collectionName, AdminSchema, collectionName);
-        }
-
         next();
     } catch (error) {
         console.error("Error generating vendorId:", error);
+        return next(error);
+    }
+});
+
+// ✅ Ensure collection exists before saving
+AdminSchema.pre('save', async function (next) {
+    try {
+        const collectionName = `admin${this.vendorId - 1000}`; // admin1, admin2, admin3
+        if (!mongoose.connection.models[collectionName]) {
+            mongoose.model(collectionName, AdminSchema, collectionName);
+        }
+        next();
+    } catch (error) {
         return next(error);
     }
 });
