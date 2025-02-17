@@ -12,8 +12,9 @@ router.post('/register-admin', async (req, res) => {
     }
 
     try {
-        // ✅ Create the admin (admin model handles vendorId generation)
-        const newAdmin = new (AdminModel("admins"))({
+        // ✅ Save admin record in the global "admins" collection first
+        const GlobalAdminModel = AdminModel("admins"); 
+        const newAdmin = new GlobalAdminModel({
             firstName,
             lastName,
             email,
@@ -27,15 +28,14 @@ router.post('/register-admin', async (req, res) => {
 
         await newAdmin.save();
 
-        // ✅ Ensure collection is correctly created before responding
-        const collectionName = `admin${newAdmin.vendorId - 1000}`;
+        // ✅ Ensure new collection is created before responding
+        const collectionName = `admin${newAdmin.vendorId}`;
         const AdminCollection = AdminModel(collectionName);
 
         res.status(201).json({
             message: 'Admin registered successfully!',
             collection: collectionName,
             vendorId: newAdmin.vendorId,
-            employeeId: newAdmin.employeeId,
             email: newAdmin.email
         });
 

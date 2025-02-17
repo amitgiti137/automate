@@ -2,7 +2,6 @@ const mongoose = require('mongoose');
 
 const AdminSchema = new mongoose.Schema({
     vendorId: { type: Number, unique: true, required: true },
-    employeeId: { type: Number, unique: true, required: true },
     firstName: { type: String, required: true },
     lastName: { type: String, required: true },
     email: { type: String, unique: true, required: true },
@@ -15,34 +14,28 @@ const AdminSchema = new mongoose.Schema({
     activeStatus: { type: String, required: true },
 }, { timestamps: true });
 
-// ✅ Generate `vendorId` and `employeeId` before saving
+// ✅ Ensure `vendorId` is created before saving
 AdminSchema.pre('validate', async function (next) {
     try {
         const lastAdmin = await mongoose.connection.db.collection("admins").findOne({}, { sort: { vendorId: -1 } });
 
         if (!lastAdmin) {
-            console.log("No admin exists, setting first admin defaults...");
-            this.vendorId = 1001; // First admin starts at 1001
-            this.employeeId = 10001; // First admin's employeeId
+            this.vendorId = 1001; // First admin starts with 1001
         } else {
-            console.log("Last admin found, setting next vendorId...");
             this.vendorId = lastAdmin.vendorId + 1; // 1001 → 1002 → 1003
-            this.employeeId = this.vendorId * 10000 + 1; // 10001 → 20001 → 30001
         }
 
         next();
     } catch (error) {
-        console.error("Error generating vendorId:", error);
         return next(error);
     }
 });
 
-// ✅ Ensure collection is created before saving
+// ✅ Create collection dynamically before saving
 AdminSchema.pre('save', async function (next) {
     try {
-        const collectionName = `admin${this.vendorId - 1000}`; // admin1, admin2, admin3
-
-        // ✅ Ensure collection is registered before inserting data
+        const collectionName = `admin${this.vendorId}`; // Creates collections as admin1001, admin1002, admin1003...
+        
         if (!mongoose.connection.models[collectionName]) {
             mongoose.model(collectionName, AdminSchema, collectionName);
         }
@@ -53,7 +46,7 @@ AdminSchema.pre('save', async function (next) {
     }
 });
 
-// ✅ Create a new collection dynamically for each Admin
+// ✅ Function to create a new Admin collection dynamically
 const AdminModel = (collectionName) => {
     if (!mongoose.connection.models[collectionName]) {
         return mongoose.model(collectionName, AdminSchema, collectionName);
