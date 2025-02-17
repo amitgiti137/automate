@@ -1,6 +1,6 @@
 const express = require('express');
-const Admin = require('../models/Admin');  // Separate Admin model
-const Employee = require('../models/Employee');  // Employee model
+const AdminModel = require('../models/Admin');
+const EmployeeModel = require('../models/Employee');
 const jwt = require('jsonwebtoken');
 const router = express.Router();
 
@@ -8,7 +8,7 @@ const START_ADMIN_ID = 10001;
 const START_VENDOR_ID = 10001;
 const START_EMPLOYEE_ID = 100001;
 
-// **Admin Registration**
+// **Register Admin**
 router.post('/register-admin', async (req, res) => {
     const { firstName, lastName, email, password, whatsappNumber, department, designation, employeeCode, activeStatus } = req.body;
 
@@ -17,24 +17,29 @@ router.post('/register-admin', async (req, res) => {
     }
 
     try {
-        const existingAdmin = await Admin.findOne({ email });
+        // Check if email already exists
+        const existingAdmin = await AdminModel("admins").findOne({ email });
         if (existingAdmin) {
             return res.status(400).json({ error: 'Admin email already exists' });
         }
 
-        const lastAdmin = await Admin.findOne().sort({ userId: -1 });
+        // Get last admin to determine next collection name
+        const lastAdmin = await AdminModel("admins").findOne().sort({ userId: -1 });
         const newAdminId = lastAdmin ? lastAdmin.userId + 1 : START_ADMIN_ID;
+        const newVendorId = lastAdmin ? lastAdmin.vendorId + 1 : START_VENDOR_ID;
 
-        const lastVendor = await Admin.findOne().sort({ vendorId: -1 });
-        const newVendorId = lastVendor ? lastVendor.vendorId + 1 : START_VENDOR_ID;
+        // Generate unique collection name for the new admin
+        const newCollectionName = `admin${newAdminId - 10000}`;
 
-        const admin = new Admin({
+        // Register the new admin in its own collection
+        const Admin = AdminModel(newCollectionName);
+        const newAdmin = new Admin({
             userId: newAdminId,
             vendorId: newVendorId,
             firstName,
             lastName,
             email,
-            password,  // Password is stored as plain text
+            password,
             whatsappNumber,
             department,
             designation,
@@ -43,14 +48,14 @@ router.post('/register-admin', async (req, res) => {
             role: 'admin'
         });
 
-        await admin.save();
+        await newAdmin.save();
 
         res.status(201).json({
             message: 'Admin registered successfully!',
-            userId: admin.userId,
-            vendorId: admin.vendorId,
-            email: admin.email,
-            role: admin.role
+            collection: newCollectionName,
+            userId: newAdminId,
+            vendorId: newVendorId,
+            email: newAdmin.email
         });
 
     } catch (err) {
@@ -63,13 +68,15 @@ router.post('/login-admin', async (req, res) => {
     const { email, password } = req.body;
 
     try {
-        const admin = await Admin.findOne({ email });
+        // Search in the global "admins" collection
+        const admin = await AdminModel("admins").findOne({ email });
         if (!admin) return res.status(404).json({ error: 'Admin not found' });
 
         if (password !== admin.password) {
             return res.status(400).json({ error: 'Invalid credentials' });
         }
 
+        // Generate JWT token
         const token = jwt.sign({ id: admin._id, role: admin.role }, process.env.JWT_SECRET, { expiresIn: '1h' });
 
         res.json({ token, admin });
@@ -79,7 +86,7 @@ router.post('/login-admin', async (req, res) => {
     }
 });
 
-// **Register Employee (Under Admin's Vendor ID)**
+// **Register Employee (Inside Admin’s Collection)**
 router.post('/register-employee', async (req, res) => {
     const { vendorId, firstName, lastName, email, password, whatsappNumber, department, designation, employeeCode, activeStatus } = req.body;
 
@@ -88,26 +95,34 @@ router.post('/register-employee', async (req, res) => {
     }
 
     try {
-        const admin = await Admin.findOne({ vendorId });
+        // Find the admin by vendorId
+        const admin = await AdminModel("admins").findOne({ vendorId });
         if (!admin) {
-            return res.status(400).json({ error: 'Invalid vendorId. Admin not found.' });
+            return res.status(404).json({ error: 'Admin not found for given vendorId' });
         }
 
+        // Use the admin's collection name for employees
+        const collectionName = `admin${admin.userId - 10000}`;
+        const Employee = EmployeeModel(collectionName);
+
+        // Check if employee email already exists
         const existingEmployee = await Employee.findOne({ email });
         if (existingEmployee) {
             return res.status(400).json({ error: 'Employee email already exists' });
         }
 
+        // Get last employee ID
         const lastEmployee = await Employee.findOne().sort({ userId: -1 });
         const newEmployeeId = lastEmployee ? lastEmployee.userId + 1 : START_EMPLOYEE_ID;
 
-        const employee = new Employee({
+        // Create new employee under the admin's collection
+        const newEmployee = new Employee({
             userId: newEmployeeId,
-            vendorId,  // Assigning Admin's vendor ID to employee
+            vendorId,
             firstName,
             lastName,
             email,
-            password,  // Password is stored as plain text
+            password,
             whatsappNumber,
             department,
             designation,
@@ -116,14 +131,14 @@ router.post('/register-employee', async (req, res) => {
             role: 'employee'
         });
 
-        await employee.save();
+        await newEmployee.save();
 
         res.status(201).json({
             message: 'Employee registered successfully!',
-            userId: employee.userId,
-            vendorId: employee.vendorId,
-            email: employee.email,
-            role: employee.role
+            collection: collectionName,
+            userId: newEmployeeId,
+            vendorId,
+            email: newEmployee.email
         });
 
     } catch (err) {
@@ -133,13 +148,22 @@ router.post('/register-employee', async (req, res) => {
 
 // **Update Employee Details**
 router.put('/update-employee', async (req, res) => {
-    const { email, updates } = req.body;
+    const { vendorId, email, updates } = req.body;
 
-    if (!email) {
-        return res.status(400).json({ error: 'Email is required' });
+    if (!vendorId || !email) {
+        return res.status(400).json({ error: 'Vendor ID and email are required' });
     }
 
     try {
+        // Find the admin's collection
+        const admin = await AdminModel("admins").findOne({ vendorId });
+        if (!admin) {
+            return res.status(404).json({ error: 'Admin not found for given vendorId' });
+        }
+
+        const collectionName = `admin${admin.userId - 10000}`;
+        const Employee = EmployeeModel(collectionName);
+
         const employee = await Employee.findOne({ email });
         if (!employee) {
             return res.status(404).json({ error: 'Employee not found' });
@@ -160,28 +184,7 @@ router.put('/update-employee', async (req, res) => {
     }
 });
 
-// **Get Employee Details by Email**
-router.get('/employee-details', async (req, res) => {
-    const { email } = req.query;
-
-    if (!email) {
-        return res.status(400).json({ error: 'Email is required' });
-    }
-
-    try {
-        const employee = await Employee.findOne({ email });
-        if (!employee) {
-            return res.status(404).json({ error: 'Employee not found' });
-        }
-
-        res.json({ employee });
-
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
-// **Fetch All Employees for an Admin (Using Vendor ID)**
+// **Fetch All Employees for an Admin**
 router.get('/employees', async (req, res) => {
     const { vendorId } = req.query;
 
@@ -190,13 +193,15 @@ router.get('/employees', async (req, res) => {
     }
 
     try {
-        const admin = await Admin.findOne({ vendorId });
+        const admin = await AdminModel("admins").findOne({ vendorId });
         if (!admin) {
-            return res.status(404).json({ error: 'Admin not found' });
+            return res.status(404).json({ error: 'Admin not found for given vendorId' });
         }
 
-        const employees = await Employee.find({ vendorId });
+        const collectionName = `admin${admin.userId - 10000}`;
+        const Employee = EmployeeModel(collectionName);
 
+        const employees = await Employee.find();
         res.json({ employees });
 
     } catch (err) {

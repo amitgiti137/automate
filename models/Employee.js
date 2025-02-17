@@ -1,11 +1,10 @@
 const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
 
 const START_USER_ID = 100001;
 
 const EmployeeSchema = new mongoose.Schema({
     userId: { type: Number, unique: true, required: true },
-    vendorId: { type: String, required: true },  // Employees get a vendorId from their admin
+    vendorId: { type: String, required: true },  
     firstName: { type: String, required: true },
     lastName: { type: String, required: true },
     email: { type: String, unique: true, required: true },
@@ -16,14 +15,14 @@ const EmployeeSchema = new mongoose.Schema({
         unique: true,
         validate: {
             validator: function(v) {
-                return /^\d{10}$/.test(v.toString()); // Ensure it's a valid 10-digit number
+                return /^\d{10}$/.test(v.toString()); 
             },
             message: props => `${props.value} is not a valid phone number!`
         }
     },
     role: { 
         type: String, 
-        enum: ['employee'],  // Only employees can be created
+        enum: ['employee'],  
         default: 'employee' 
     },
     department: { type: String, required: true },
@@ -32,11 +31,11 @@ const EmployeeSchema = new mongoose.Schema({
     activeStatus: { type: String, required: true },
 }, { timestamps: true });
 
-// Assign sequential userId and inherit vendorId from admin before saving
+// ✅ Assign unique userId before saving
 EmployeeSchema.pre('validate', async function (next) {
     try {
         if (!this.userId) {
-            const lastUser = await mongoose.models.Employee.findOne().sort({ userId: -1 });
+            const lastUser = await mongoose.connection.db.collection(this.collection.name).findOne({}, { sort: { userId: -1 } });
             this.userId = lastUser && lastUser.userId ? lastUser.userId + 1 : START_USER_ID;
         }
 
@@ -51,16 +50,7 @@ EmployeeSchema.pre('validate', async function (next) {
     next();
 });
 
-// Hash password before saving
-/* EmployeeSchema.pre('save', async function (next) {
-    if (!this.isModified('password')) return next();
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
-    next();
-}); */
+// ✅ Store employees in the admin's unique collection (e.g., "admin1", "admin2")
+const EmployeeModel = (collectionName) => mongoose.model(collectionName, EmployeeSchema, collectionName);
 
-if (!global.EmployeeModel) {
-    global.EmployeeModel = mongoose.models.Employee || mongoose.model('Employee', EmployeeSchema);
-}
-
-module.exports = global.EmployeeModel;
+module.exports = EmployeeModel;
