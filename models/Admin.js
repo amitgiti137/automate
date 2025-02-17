@@ -38,7 +38,7 @@ AdminSchema.pre('validate', async function (next) {
     }
 });
 
-// ✅ Ensure collection exists before saving
+// ✅ Ensure new collection is created before saving
 AdminSchema.pre('save', async function (next) {
     try {
         const collectionName = `admin${this.vendorId - 1000}`; // admin1, admin2, admin3
@@ -51,7 +51,7 @@ AdminSchema.pre('save', async function (next) {
     }
 });
 
-// ✅ Create a new collection dynamically for each Admin
+// ✅ Create a new AdminModel dynamically
 const AdminModel = (collectionName) => {
     if (!mongoose.connection.models[collectionName]) {
         return mongoose.model(collectionName, AdminSchema, collectionName);
