@@ -60,7 +60,7 @@ UserSchema.pre('validate', async function (next) {
 });
 
 if (!global.UserModel) {
-    global.UserModel = mongoose.models.User || mongoose.model('User', UserSchema);
+    global.UserModel = mongoose.models.User || mongoose.model('Admin', UserSchema);
 
 }
 
