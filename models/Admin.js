@@ -15,6 +15,26 @@ const AdminSchema = new mongoose.Schema({
     activeStatus: { type: String, required: true },
 }, { timestamps: true });
 
+// ✅ Auto-generate `vendorId` and `employeeId` for Admins
+AdminSchema.pre('validate', async function (next) {
+    try {
+        const lastAdmin = await mongoose.connection.db.collection("admins").findOne({}, { sort: { vendorId: -1 } });
+
+        if (!lastAdmin) {
+            this.vendorId = 1001; // First admin
+            this.employeeId = 10001; // First admin's employeeId
+        } else {
+            this.vendorId = lastAdmin.vendorId + 1; // 1001 → 1002 → 1003 ...
+            this.employeeId = this.vendorId * 10000 + 1; // 10001 → 20001 → 30001 ...
+        }
+
+        next();
+    } catch (error) {
+        return next(error);
+    }
+});
+
+// ✅ Create a new collection dynamically for each Admin
 const AdminModel = (collectionName) => mongoose.model(collectionName, AdminSchema, collectionName);
 
 module.exports = AdminModel;
