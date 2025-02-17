@@ -15,10 +15,10 @@ const AdminSchema = new mongoose.Schema({
     activeStatus: { type: String, required: true },
 }, { timestamps: true });
 
-// ✅ Auto-generate vendorId & employeeId before saving
+// ✅ Auto-generate `vendorId` and `employeeId` before saving
 AdminSchema.pre('validate', async function (next) {
     try {
-        // Check if any admin exists in "admins" collection
+        // Check last admin in the "admins" collection
         const lastAdmin = await mongoose.connection.db.collection("admins").findOne({}, { sort: { vendorId: -1 } });
 
         if (!lastAdmin) {
@@ -27,8 +27,14 @@ AdminSchema.pre('validate', async function (next) {
             this.employeeId = 10001; // First admin's employeeId
         } else {
             console.log("Last admin found, setting next vendorId...");
-            this.vendorId = lastAdmin.vendorId + 1; // Increment vendorId (1001 → 1002 → 1003)
-            this.employeeId = this.vendorId * 10000 + 1; // Employee ID (10001 → 20001 → 30001)
+            this.vendorId = lastAdmin.vendorId + 1; // 1001 → 1002 → 1003
+            this.employeeId = this.vendorId * 10000 + 1; // 10001 → 20001 → 30001
+        }
+
+        // ✅ Ensure collection exists before saving
+        const collectionName = `admin${this.vendorId}`;
+        if (!mongoose.connection.models[collectionName]) {
+            mongoose.model(collectionName, AdminSchema, collectionName);
         }
 
         next();
@@ -39,6 +45,11 @@ AdminSchema.pre('validate', async function (next) {
 });
 
 // ✅ Create a new collection dynamically for each Admin
-const AdminModel = (collectionName) => mongoose.model(collectionName, AdminSchema, collectionName);
+const AdminModel = (collectionName) => {
+    if (!mongoose.connection.models[collectionName]) {
+        return mongoose.model(collectionName, AdminSchema, collectionName);
+    }
+    return mongoose.connection.models[collectionName];
+};
 
 module.exports = AdminModel;

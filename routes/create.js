@@ -27,9 +27,13 @@ router.post('/register-admin', async (req, res) => {
 
         await newAdmin.save();
 
+        // ✅ Correctly create the collection before responding
+        const collectionName = `admin${newAdmin.vendorId}`;
+        const AdminCollection = AdminModel(collectionName);
+
         res.status(201).json({
             message: 'Admin registered successfully!',
-            collection: `admin${newAdmin.vendorId}`,
+            collection: collectionName,
             vendorId: newAdmin.vendorId,
             employeeId: newAdmin.employeeId,
             email: newAdmin.email
