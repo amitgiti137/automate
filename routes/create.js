@@ -23,6 +23,18 @@ router.post('/register_admin', async (req, res) => {
 
         await admin.save();
 
+        // Generate first employeeId for this vendor
+        const employeeId = admin.vendorId * 10000 + 1;
+
+        // Create employee entry for the admin
+        const employee = new Employee({
+            firstName, lastName, email, password, whatsappNumber, department, designation, employeeCode, activeStatus,
+            vendorId: admin.vendorId,
+            employeeId
+        });
+
+        await employee.save();
+
         res.status(201).json({
             message: 'Admin registered successfully!',
             ...admin.toObject() 
