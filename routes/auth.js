@@ -4,6 +4,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const router = express.Router();
 
+
 // **Register User**
 router.post('/register', async (req, res) => {
     const { firstName, lastName, email, password, confirmPassword, whatsappNumber, department, designation, employeeCode, activeStatus } = req.body;
@@ -240,7 +241,7 @@ router.get('/user_details', async (req, res) => {
 router.get('/users', async (req, res) => {
     try {
         const users = await User.find({}, 'userId vendorId firstName lastName email whatsappNumber role department designation employeeCode activeStatus createdAt updatedAt');
-
+`    `
         // Function to format date
         const formatDate = (date) => new Date(date).toLocaleString('en-GB', {
             timeZone: 'Asia/Kolkata',  // Set time zone to IST

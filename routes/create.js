@@ -4,6 +4,13 @@ const Employee = require('../models/Employee');
 const jwt = require('jsonwebtoken');
 const router = express.Router();
 
+// Format the dates
+const formatDate = (date) => new Date(date).toLocaleString('en-GB', {
+    timeZone: 'Asia/Kolkata',  // Set time zone to IST
+    day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit', hour12: false
+});
+
 // **Admin Registration**
 router.post('/register_admin', async (req, res) => {
     const { firstName, lastName, email, password, confirmPassword, whatsappNumber, department, designation, employeeCode, activeStatus } = req.body;
@@ -34,10 +41,20 @@ router.post('/register_admin', async (req, res) => {
         });
 
         await employee.save();
+        
 
         res.status(201).json({
             message: 'Admin registered successfully!',
-            ...admin.toObject() 
+            admin: {
+                ...admin.toObject(),
+                createdAt: formatDate(admin.createdAt),
+                updatedAt: formatDate(admin.updatedAt)
+            },
+            employee: {
+                ...employee.toObject(),
+                createdAt: formatDate(employee.createdAt),
+                updatedAt: formatDate(employee.updatedAt)
+            }
         });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -70,7 +87,11 @@ router.post('/register_employee', async (req, res) => {
 
         res.status(201).json({
             message: 'Employee registered successfully!',
-            ...employee.toObject() 
+            employee: {
+                ...employee.toObject(),
+                createdAt: formatDate(employee.createdAt),
+                updatedAt: formatDate(employee.updatedAt)
+            }
         });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -91,7 +112,14 @@ router.post('/login', async (req, res) => {
 
         const token = jwt.sign({ id: user._id, vendorId: user.vendorId }, process.env.JWT_SECRET, { expiresIn: '1h' });
 
-        res.json({ token, ...user.toObject() });
+        res.json({ 
+            token, 
+            user: {
+                ...user.toObject(),
+                createdAt: formatDate(user.createdAt),
+                updatedAt: formatDate(user.updatedAt)
+            }
+        });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
