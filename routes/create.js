@@ -223,7 +223,7 @@ router.get('/employee_details', async (req, res) => {
 // **Fetch All Users**
 router.get('/employees', async (req, res) => {
     try {
-        const users = await Employee.find({}, 'userId vendorId firstName lastName email whatsappNumber role department designation employeeCode activeStatus createdAt updatedAt');
+        const user = await Employee.find({}, 'userId vendorId firstName lastName email whatsappNumber role department designation employeeCode activeStatus createdAt updatedAt');
 `    `
         // Function to format date
         const formatDate = (date) => new Date(date).toLocaleString('en-GB', {
@@ -234,7 +234,7 @@ router.get('/employees', async (req, res) => {
 
         res.json({
             status: true,
-            message: 'User details updated successfully',
+            message: 'Employees',
             user: {
                 ...user.toObject(),
                 createdAt: formatDate(user.createdAt),
