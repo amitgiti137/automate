@@ -142,7 +142,7 @@ router.put('/update_employee', async (req, res) => {
 
         // If user wants to update email, check if the new email already exists
         if (newEmail && newEmail !== email) {
-            const existingEmail = await User.findOne({ email: newEmail });
+            const existingEmail = await Employee.findOne({ email: newEmail });
             if (existingEmail) {
                 return res.status(400).json({ status: false, message: 'New email already in use' });
             }
@@ -223,7 +223,7 @@ router.get('/employee_details', async (req, res) => {
 // **Fetch All Users**
 router.get('/employees', async (req, res) => {
     try {
-        const user = await Employee.find({}, 'userId vendorId firstName lastName email whatsappNumber role department designation employeeCode activeStatus createdAt updatedAt');
+        const users = await Employee.find({}, 'userId vendorId firstName lastName email whatsappNumber role department designation employeeCode activeStatus createdAt updatedAt');
 `    `
         // Function to format date
         const formatDate = (date) => new Date(date).toLocaleString('en-GB', {
@@ -232,16 +232,28 @@ router.get('/employees', async (req, res) => {
             hour: '2-digit', minute: '2-digit', hour12: false
         });
 
+        // Format createdAt & updatedAt for each user
+        const formattedUsers = users.map(user => ({
+            employeeId: user.employeeId,
+            vendorId: user.vendorId,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: user.email,
+            whatsappNumber: user.whatsappNumber,
+            department: user.department,
+            designation: user.designation,
+            employeeCode: user.employeeCode,
+            activeStatus: user.activeStatus,
+            createdAt: formatDate(user.createdAt),
+            updatedAt: formatDate(user.updatedAt)
+        }));
+
         res.json({
             status: true,
-            message: 'Employees',
-            user: {
-                ...user.toObject(),
-                createdAt: formatDate(user.createdAt),
-                updatedAt: formatDate(user.updatedAt)
-            }
+            message: 'Employees fetched successfully',
+            employees: formattedUsers
         });
-    } catch (err) {
+    } catch (err) {a
         res.status(500).json({ error: err.message });
     }
 });
