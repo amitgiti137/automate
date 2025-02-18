@@ -125,4 +125,134 @@ router.post('/login', async (req, res) => {
     }
 });
 
+
+router.put('/update_employee', async (req, res) => {
+    const { email, newEmail, ...updates } = req.body;
+
+    if (!email) {
+        return res.status(400).json({ status: false, message: 'Email is required to update user details' });
+    }
+
+    try {
+        const user = await Employee.findOne({ email });
+
+        if (!user) {
+            return res.status(404).json({ status: false, message: 'Employee not found' });
+        }
+
+        // If user wants to update email, check if the new email already exists
+        if (newEmail && newEmail !== email) {
+            const existingEmail = await User.findOne({ email: newEmail });
+            if (existingEmail) {
+                return res.status(400).json({ status: false, message: 'New email already in use' });
+            }
+            user.email = newEmail; // Update email
+        }
+
+        // Only update the fields provided in the request
+        Object.keys(updates).forEach((key) => {
+            if (updates[key] !== undefined) {
+                user[key] = updates[key];
+            }
+        });
+
+        await user.save();
+
+        // Format the dates
+        const formatDate = (date) => new Date(date).toLocaleString('en-GB', {
+            timeZone: 'Asia/Kolkata',  // Set time zone to IST
+            day: '2-digit', month: '2-digit', year: 'numeric',
+            hour: '2-digit', minute: '2-digit', hour12: false
+        });
+
+        res.json({
+            status: true,
+            message: 'User details updated successfully',
+            user: {
+                ...user.toObject(),
+                createdAt: formatDate(user.createdAt),
+                updatedAt: formatDate(user.updatedAt)
+            }
+        });
+    } catch (err) {
+        res.status(500).json({ status: false, message: 'Internal server error', error: err.message });
+    }
+});
+
+
+
+
+// **Get User Details by Email**
+router.get('/employee_details', async (req, res) => {
+    const { email } = req.query;
+
+    try {
+        if (!email) {
+            return res.status(400).json({ status: false, message: 'Email is required' });
+        }
+
+        const user = await Employee.findOne({ email });
+
+        // Format the dates
+        const formatDate = (date) => new Date(date).toLocaleString('en-GB', {
+            timeZone: 'Asia/Kolkata',  // Set time zone to IST
+            day: '2-digit', month: '2-digit', year: 'numeric',
+            hour: '2-digit', minute: '2-digit', hour12: false
+        });
+
+        if (!user) {
+            return res.status(404).json({ status: false, message: 'Employee not found' });
+        }
+
+        
+
+        res.json({
+            status: true,
+            message: 'User details updated successfully',
+            user: {
+                ...user.toObject(),
+                createdAt: formatDate(user.createdAt),
+                updatedAt: formatDate(user.updatedAt)
+            }
+        });
+    } catch (err) {
+        res.status(500).json({ status: false, message: 'Internal server error', error: err.message });
+    }
+});
+
+// **Fetch All Users**
+router.get('/users', async (req, res) => {
+    try {
+        const users = await User.find({}, 'userId vendorId firstName lastName email whatsappNumber role department designation employeeCode activeStatus createdAt updatedAt');
+`    `
+        // Function to format date
+        const formatDate = (date) => new Date(date).toLocaleString('en-GB', {
+            timeZone: 'Asia/Kolkata',  // Set time zone to IST
+            day: '2-digit', month: '2-digit', year: 'numeric',
+            hour: '2-digit', minute: '2-digit', hour12: false
+        });
+
+        // Format createdAt & updatedAt for each user
+        const formattedUsers = users.map(user => ({
+            userId: user.userId,
+            vendorId: user.vendorId,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: user.email,
+            whatsappNumber: user.whatsappNumber,
+            role: user.role,
+            department: user.department,
+            designation: user.designation,
+            employeeCode: user.employeeCode,
+            activeStatus: user.activeStatus,
+            createdAt: formatDate(user.createdAt),
+            updatedAt: formatDate(user.updatedAt)
+        }));
+
+        res.json(formattedUsers);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 module.exports = router;
