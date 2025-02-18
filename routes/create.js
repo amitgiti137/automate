@@ -221,9 +221,9 @@ router.get('/employee_details', async (req, res) => {
 });
 
 // **Fetch All Users**
-router.get('/users', async (req, res) => {
+router.get('/employees', async (req, res) => {
     try {
-        const users = await User.find({}, 'userId vendorId firstName lastName email whatsappNumber role department designation employeeCode activeStatus createdAt updatedAt');
+        const users = await Employee.find({}, 'userId vendorId firstName lastName email whatsappNumber role department designation employeeCode activeStatus createdAt updatedAt');
 `    `
         // Function to format date
         const formatDate = (date) => new Date(date).toLocaleString('en-GB', {
@@ -232,24 +232,15 @@ router.get('/users', async (req, res) => {
             hour: '2-digit', minute: '2-digit', hour12: false
         });
 
-        // Format createdAt & updatedAt for each user
-        const formattedUsers = users.map(user => ({
-            userId: user.userId,
-            vendorId: user.vendorId,
-            firstName: user.firstName,
-            lastName: user.lastName,
-            email: user.email,
-            whatsappNumber: user.whatsappNumber,
-            role: user.role,
-            department: user.department,
-            designation: user.designation,
-            employeeCode: user.employeeCode,
-            activeStatus: user.activeStatus,
-            createdAt: formatDate(user.createdAt),
-            updatedAt: formatDate(user.updatedAt)
-        }));
-
-        res.json(formattedUsers);
+        res.json({
+            status: true,
+            message: 'User details updated successfully',
+            user: {
+                ...user.toObject(),
+                createdAt: formatDate(user.createdAt),
+                updatedAt: formatDate(user.updatedAt)
+            }
+        });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
