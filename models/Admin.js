@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 
 const AdminSchema = new mongoose.Schema({
     vendorId: { type: Number, unique: true, required: true }, 
+    employeeId: { type: Number, unique: true, required: true },
     firstName: { type: String, required: true },
     lastName: { type: String, required: true },
     email: { type: String, unique: true, required: true },
@@ -18,6 +19,9 @@ AdminSchema.pre('validate', async function (next) {
     try {
         const lastAdmin = await mongoose.models.Admin.findOne().sort({ vendorId: -1 });
         this.vendorId = lastAdmin && lastAdmin.vendorId ? lastAdmin.vendorId + 1 : 1;
+
+        // ✅ Generate employeeId using vendorId
+        this.employeeId = this.vendorId * 10000 + 1;
     } catch (error) {
         return next(error);
     }

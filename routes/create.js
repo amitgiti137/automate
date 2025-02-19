@@ -31,7 +31,7 @@ router.post('/register_admin', async (req, res) => {
         await admin.save();
 
         // Generate first employeeId for this vendor
-        const employeeId = admin.vendorId * 10000 + 1;
+        const employeeId = admin.employeeId;
 
         // Create employee entry for the admin
         const employee = new Employee({
@@ -47,7 +47,7 @@ router.post('/register_admin', async (req, res) => {
             message: 'Admin registered successfully!',
             admin: {
                 ...admin.toObject(),
-                employeeId: employee.employeeId,
+                employeeId: admin.employeeId,
                 createdAt: formatDate(admin.createdAt),
                 updatedAt: formatDate(admin.updatedAt)
             },
@@ -112,13 +112,22 @@ router.post('/login', async (req, res) => {
             return res.status(400).json({ error: 'Invalid credentials' });
         }
 
+        // ✅ Fetch employeeId from Admin model if the user is an Admin
+        let employeeId = user.employeeId;
+        if (!employeeId && user instanceof Admin) {
+            const employee = await Employee.findOne({ email, vendorId: user.vendorId });
+            if (employee) {
+                employeeId = employee.employeeId;
+            }
+        }
+
         const token = jwt.sign({ id: user._id, vendorId: user.vendorId }, process.env.JWT_SECRET, { expiresIn: '1h' });
 
         res.json({
             token,
             user: {
                 ...user.toObject(),
-                employeeId: user.employeeId,
+                employeeId,
                 createdAt: formatDate(user.createdAt),
                 updatedAt: formatDate(user.updatedAt)
             }
