@@ -45,9 +45,9 @@ router.post('/', async (req, res) => {
         }
 
         // ✅ Prevent self-assignment
-        if (assignedToNumbers.includes(assignedByNumber)) {
+        /* if (assignedToNumbers.includes(assignedByNumber)) {
             return res.status(400).json({ error: "You cannot assign a task to yourself" });
-        }
+        } */
 
         // ✅ Create and save task
         const task = new Task({
