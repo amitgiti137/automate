@@ -114,7 +114,7 @@ router.post('/login', async (req, res) => {
 
         // ✅ Fetch employeeId from Admin model if the user is an Admin
         let employeeId = user.employeeId;
-        if (!employeeId && user instanceof Admin) {
+        if (user instanceof Admin) {
             const employee = await Employee.findOne({ email, vendorId: user.vendorId });
             if (employee) {
                 employeeId = employee.employeeId;

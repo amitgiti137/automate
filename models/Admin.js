@@ -21,7 +21,9 @@ AdminSchema.pre('validate', async function (next) {
         this.vendorId = lastAdmin && lastAdmin.vendorId ? lastAdmin.vendorId + 1 : 1;
 
         // ✅ Generate employeeId using vendorId
-        this.employeeId = this.vendorId * 10000 + 1;
+        if (!this.employeeId) {
+            this.employeeId = this.vendorId * 10000 + 1;
+        }
     } catch (error) {
         return next(error);
     }
