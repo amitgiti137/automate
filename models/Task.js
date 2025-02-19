@@ -5,6 +5,7 @@ const TaskSchema = new mongoose.Schema({
     description: { type: String, required: true },
     assignedBy: { type: Number, required: true }, // ✅ Stores userId instead of ObjectId
     assignedTo: [{ type: Number, required: true }], // ✅ Supports multiple assigned users
+    vendorId: { type: Number, required: true }, // ✅ Stores Vendor ID
     category: { type: String, required: true }, // ✅ New: Task category (Department)
     priority: { type: String, enum: ['high', 'medium', 'low'], required: true }, // ✅ New: Task priority
     dueDate: { type: Date, required: true }, // ✅ New: Task due date
