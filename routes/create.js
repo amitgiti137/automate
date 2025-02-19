@@ -53,6 +53,7 @@ router.post('/register_admin', async (req, res) => {
             },
             employee: {
                 ...employee.toObject(),
+                employeeId: employee.employeeId,
                 createdAt: formatDate(employee.createdAt),
                 updatedAt: formatDate(employee.updatedAt)
             }
@@ -117,6 +118,7 @@ router.post('/login', async (req, res) => {
             token,
             user: {
                 ...user.toObject(),
+                employeeId: user.employeeId,
                 createdAt: formatDate(user.createdAt),
                 updatedAt: formatDate(user.updatedAt)
             }
