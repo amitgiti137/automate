@@ -47,6 +47,7 @@ router.post('/register_admin', async (req, res) => {
             message: 'Admin registered successfully!',
             admin: {
                 ...admin.toObject(),
+                employeeId: employee.employeeId,
                 createdAt: formatDate(admin.createdAt),
                 updatedAt: formatDate(admin.updatedAt)
             },
