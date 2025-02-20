@@ -65,6 +65,7 @@ router.post('/', async (req, res) => {
         res.status(201).json({
             message: "Task created successfully!",
             task: {
+                taskId: task.taskId,
                 title,
                 description,
                 category,
@@ -104,6 +105,7 @@ router.get('/vendor/:vendorId', async (req, res) => {
             const assignedEmployees = await Employee.find({ employeeId: { $in: task.assignedTo } });
 
             return {
+                taskId: task.taskId,
                 title: task.title,
                 description: task.description,
                 category: task.category,
@@ -144,6 +146,7 @@ router.get('/assigned-by/:vendorId/:employeeId', async (req, res) => {
             const assignedEmployees = await Employee.find({ employeeId: { $in: task.assignedTo } });
 
             return {
+                taskId: task.taskId,
                 title: task.title,
                 description: task.description,
                 category: task.category,
@@ -184,6 +187,7 @@ router.get('/assigned-to/:vendorId/:employeeId', async (req, res) => {
             const assignedEmployees = await Employee.find({ employeeId: { $in: task.assignedTo } });
 
             return {
+                taskId: task.taskId,
                 title: task.title,
                 description: task.description,
                 category: task.category,
@@ -217,9 +221,9 @@ router.put("/reassign/:vendorId/:taskId", async (req, res) => {
             return res.status(400).json({ error: "Invalid Vendor ID." });
         }
 
-        if (!isValidObjectId(taskId)) {
+        /* if (!isValidObjectId(taskId)) {
             return res.status(400).json({ error: "Invalid Task ID format" });
-        }
+        } */
 
         /* if (!Array.isArray(newAssignedTo)) {
             return res.status(400).json({ error: "newAssignedTo must be an array of employee IDs" });
@@ -232,7 +236,7 @@ router.put("/reassign/:vendorId/:taskId", async (req, res) => {
             return res.status(404).json({ error: "One or more assigned employees not found" });
         } */
 
-        const task = await Task.findOne({ _id: taskId, vendorId });
+        const task = await Task.findOne({ taskId, vendorId });
         if (!task) return res.status(404).json({ error: "Task not found for this vendor" });
 
         // ✅ Allow Updating Status
@@ -275,6 +279,7 @@ router.put("/reassign/:vendorId/:taskId", async (req, res) => {
 
         // Format Response
         const formattedTask = {
+            taskId: task.taskId,
             title: task.title,
             description: task.description,
             category: task.category,
@@ -306,11 +311,11 @@ router.get('/task/:vendorId/:taskId', async (req, res) => {
             return res.status(400).json({ error: "Invalid Vendor ID." });
         }
 
-        if (!isValidObjectId(taskId)) {
+        /* if (!isValidObjectId(taskId)) {
             return res.status(400).json({ error: "Invalid Task ID format" });
-        }
+        } */
 
-        const task = await Task.findOne({ _id: taskId, vendorId });
+        const task = await Task.findOne({ taskId, vendorId });
         if (!task) return res.status(404).json({ error: "Task not found for this vendor" });
 
         // Fetch employee details
@@ -319,6 +324,7 @@ router.get('/task/:vendorId/:taskId', async (req, res) => {
 
         // Format the response
         const formattedTask = {
+            taskId: task.taskId,
             title: task.title,
             description: task.description,
             category: task.category,
