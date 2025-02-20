@@ -71,6 +71,7 @@ router.post('/', async (req, res) => {
                 priority,
                 dueDate,
                 vendorId, // ✅ Include vendorId in response
+                status: task.status,
                 assignedBy: `(EmployeeID: ${assignedByEmployee.employeeId})`,
                 assignedByName:`${assignedByEmployee.firstName} ${assignedByEmployee.lastName}`,
                 assignedTo: assignedEmployees.map(emp => `(EmployeeID: ${emp.employeeId})`),
@@ -109,6 +110,7 @@ router.get('/vendor/:vendorId', async (req, res) => {
                 priority: task.priority,
                 dueDate: formatDate(task.dueDate),
                 vendorId: task.vendorId,
+                status: task.status,
                 assignedBy: `(EmployeeID: ${assignedByEmployee?.employeeId || "N/A"})`,
                 assignedByName: assignedByEmployee ? `${assignedByEmployee.firstName} ${assignedByEmployee.lastName}` : "Unknown",
                 assignedTo: assignedEmployees.map(emp => `(EmployeeID: ${emp.employeeId})`),
@@ -148,6 +150,7 @@ router.get('/assigned-by/:vendorId/:employeeId', async (req, res) => {
                 priority: task.priority,
                 dueDate: formatDate(task.dueDate),
                 vendorId: task.vendorId,
+                status: task.status,
                 assignedBy: `(EmployeeID: ${assignedByEmployee?.employeeId || "N/A"})`,
                 assignedByName: assignedByEmployee ? `${assignedByEmployee.firstName} ${assignedByEmployee.lastName}` : "Unknown",
                 assignedTo: assignedEmployees.map(emp => `(EmployeeID: ${emp.employeeId})`),
@@ -187,6 +190,7 @@ router.get('/assigned-to/:vendorId/:employeeId', async (req, res) => {
                 priority: task.priority,
                 dueDate: formatDate(task.dueDate),
                 vendorId: task.vendorId,
+                status: task.status,
                 assignedBy: `(EmployeeID: ${assignedByEmployee?.employeeId || "N/A"})`,
                 assignedByName: assignedByEmployee ? `${assignedByEmployee.firstName} ${assignedByEmployee.lastName}` : "Unknown",
                 assignedTo: assignedEmployees.map(emp => `(EmployeeID: ${emp.employeeId})`),
@@ -230,6 +234,15 @@ router.put("/reassign/:vendorId/:taskId", async (req, res) => {
 
         const task = await Task.findOne({ _id: taskId, vendorId });
         if (!task) return res.status(404).json({ error: "Task not found for this vendor" });
+
+        // ✅ Allow Updating Status
+        if (updateFields.status) {
+            const validStatuses = ["Pending", "In-Progress", "Completed"];
+            if (!validStatuses.includes(updateFields.status)) {
+                return res.status(400).json({ error: `Invalid status. Allowed: ${validStatuses.join(", ")}` });
+            }
+            task.status = updateFields.status;
+        }
 
         // Handle `assignedTo` field separately
         if (updateFields.assignedTo) {
@@ -312,6 +325,7 @@ router.get('/task/:vendorId/:taskId', async (req, res) => {
             priority: task.priority,
             dueDate: formatDate(task.dueDate),
             vendorId: task.vendorId,
+            status: task.status,
             assignedBy: `(EmployeeID: ${assignedByEmployee?.employeeId || "N/A"})`,
             assignedByName: assignedByEmployee ? `${assignedByEmployee.firstName} ${assignedByEmployee.lastName}` : "Unknown",
             assignedTo: assignedEmployees.map(emp => `(EmployeeID: ${emp.employeeId})`),
