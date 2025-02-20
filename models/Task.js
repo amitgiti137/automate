@@ -9,11 +9,11 @@ const TaskSchema = new mongoose.Schema({
     assignedToNames: [{ type: String }],
     vendorId: { type: Number, required: true }, // ✅ Stores Vendor ID
     category: { type: String, required: true }, // ✅ New: Task category (Department)
-    priority: { type: String, enum: ['high', 'medium', 'low'], required: true }, // ✅ New: Task priority
+    priority: { type: String, enum: ['High', 'Medium', 'Low'], required: true }, // ✅ New: Task priority
     dueDate: { type: Date, required: true }, // ✅ New: Task due date
     /* attachment: { type: String }, */ // ✅ New: Optional file attachment URL
     createdAt: { type: Date, default: Date.now },
-    status: { type: String, enum: ['pending', 'in-progress', 'completed'], default: 'pending' },
+    status: { type: String, enum: ['Pending', 'In-Progress', 'Completed'], default: 'Pending' },
     updatedAt: { type: Date, default: Date.now } // Track updates
 }, {timestamps : true});
 
