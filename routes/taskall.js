@@ -15,6 +15,12 @@ const validateVendor = async (vendorId) => {
     return !!vendorExists;
 };
 
+const formatDate = (date) => new Date(date).toLocaleString('en-GB', {
+    timeZone: 'Asia/Kolkata',  // Set time zone to IST
+    day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit', hour12: false
+});
+
 // ✅ Task Creation (with Employee IDs)
 router.post('/', async (req, res) => {
     try {
@@ -65,8 +71,12 @@ router.post('/', async (req, res) => {
                 priority,
                 dueDate,
                 vendorId, // ✅ Include vendorId in response
-                assignedBy: `${assignedByEmployee.firstName} ${assignedByEmployee.lastName} (EmployeeID: ${assignedByEmployee.employeeId})`,
-                assignedTo: assignedEmployees.map(emp => `${emp.firstName} ${emp.lastName} (EmployeeID: ${emp.employeeId})`),
+                assignedBy: `(EmployeeID: ${assignedByEmployee.employeeId})`,
+                assignedByName:`${assignedByEmployee.firstName} ${assignedByEmployee.lastName}`,
+                assignedTo: assignedEmployees.map(emp => `(EmployeeID: ${emp.employeeId})`),
+                assignedToNames: assignedEmployees.map(emp => `${emp.firstName} ${emp.lastName}`),
+                createdAt: formatDate(task.createdAt),
+                updatedAt: formatDate(task.updatedAt)
             },
         });
 
@@ -87,7 +97,28 @@ router.get('/vendor/:vendorId', async (req, res) => {
 
         const tasks = await Task.find({ vendorId });
 
-        res.json({ vendorId, tasks });
+        // Fetch employee details
+        const formattedTasks = await Promise.all(tasks.map(async (task) => {
+            const assignedByEmployee = await Employee.findOne({ employeeId: task.assignedBy });
+            const assignedEmployees = await Employee.find({ employeeId: { $in: task.assignedTo } });
+
+            return {
+                title: task.title,
+                description: task.description,
+                category: task.category,
+                priority: task.priority,
+                dueDate: formatDate(task.dueDate),
+                vendorId: task.vendorId,
+                assignedBy: `(EmployeeID: ${assignedByEmployee?.employeeId || "N/A"})`,
+                assignedByName: assignedByEmployee ? `${assignedByEmployee.firstName} ${assignedByEmployee.lastName}` : "Unknown",
+                assignedTo: assignedEmployees.map(emp => `(EmployeeID: ${emp.employeeId})`),
+                assignedToNames: assignedEmployees.map(emp => `${emp.firstName} ${emp.lastName}`),
+                createdAt: formatDate(task.createdAt),
+                updatedAt: formatDate(task.updatedAt)
+            };
+        }));
+
+        res.json({ vendorId, tasks: formattedTasks });
 
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -105,7 +136,28 @@ router.get('/assigned-by/:vendorId/:employeeId', async (req, res) => {
 
         const tasks = await Task.find({ vendorId, assignedBy: employeeId });
 
-        res.json({ vendorId, tasks });
+        // Fetch employee details
+        const formattedTasks = await Promise.all(tasks.map(async (task) => {
+            const assignedByEmployee = await Employee.findOne({ employeeId: task.assignedBy });
+            const assignedEmployees = await Employee.find({ employeeId: { $in: task.assignedTo } });
+
+            return {
+                title: task.title,
+                description: task.description,
+                category: task.category,
+                priority: task.priority,
+                dueDate: formatDate(task.dueDate),
+                vendorId: task.vendorId,
+                assignedBy: `(EmployeeID: ${assignedByEmployee?.employeeId || "N/A"})`,
+                assignedByName: assignedByEmployee ? `${assignedByEmployee.firstName} ${assignedByEmployee.lastName}` : "Unknown",
+                assignedTo: assignedEmployees.map(emp => `(EmployeeID: ${emp.employeeId})`),
+                assignedToNames: assignedEmployees.map(emp => `${emp.firstName} ${emp.lastName}`),
+                createdAt: formatDate(task.createdAt),
+                updatedAt: formatDate(task.updatedAt)
+            };
+        }));
+
+        res.json({ vendorId, tasks: formattedTasks });
 
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -123,7 +175,28 @@ router.get('/assigned-to/:vendorId/:employeeId', async (req, res) => {
 
         const tasks = await Task.find({ vendorId, assignedTo: employeeId });
 
-        res.json({ vendorId, tasks });
+        // Fetch employee details
+        const formattedTasks = await Promise.all(tasks.map(async (task) => {
+            const assignedByEmployee = await Employee.findOne({ employeeId: task.assignedBy });
+            const assignedEmployees = await Employee.find({ employeeId: { $in: task.assignedTo } });
+
+            return {
+                title: task.title,
+                description: task.description,
+                category: task.category,
+                priority: task.priority,
+                dueDate: formatDate(task.dueDate),
+                vendorId: task.vendorId,
+                assignedBy: `(EmployeeID: ${assignedByEmployee?.employeeId || "N/A"})`,
+                assignedByName: assignedByEmployee ? `${assignedByEmployee.firstName} ${assignedByEmployee.lastName}` : "Unknown",
+                assignedTo: assignedEmployees.map(emp => `(EmployeeID: ${emp.employeeId})`),
+                assignedToNames: assignedEmployees.map(emp => `${emp.firstName} ${emp.lastName}`),
+                createdAt: formatDate(task.createdAt),
+                updatedAt: formatDate(task.updatedAt)
+            };
+        }));
+
+        res.json({ vendorId, tasks: formattedTasks });
 
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -155,13 +228,34 @@ router.put("/reassign/:vendorId/:taskId", async (req, res) => {
             return res.status(404).json({ error: "One or more assigned employees not found" });
         }
 
-        const task = await Task.findOne({ _id: taskId, vendorId });
-        if (!task) return res.status(404).json({ error: "Task not found for this vendor" });
+        const tasks = await Task.findOne({ _id: taskId, vendorId });
+        if (!tasks) return res.status(404).json({ error: "Task not found for this vendor" });
 
-        task.assignedTo = newAssignedTo;
-        await task.save();
+        tasks.assignedTo = newAssignedTo;
+        await tasks.save();
 
-        res.json({ message: "Task reassigned successfully!", vendorId, task });
+        // Fetch employee details
+        const formattedTasks = await Promise.all(tasks.map(async (task) => {
+            const assignedByEmployee = await Employee.findOne({ employeeId: task.assignedBy });
+            const assignedEmployees = await Employee.find({ employeeId: { $in: task.assignedTo } });
+
+            return {
+                title: task.title,
+                description: task.description,
+                category: task.category,
+                priority: task.priority,
+                dueDate: formatDate(task.dueDate),
+                vendorId: task.vendorId,
+                assignedBy: `(EmployeeID: ${assignedByEmployee?.employeeId || "N/A"})`,
+                assignedByName: assignedByEmployee ? `${assignedByEmployee.firstName} ${assignedByEmployee.lastName}` : "Unknown",
+                assignedTo: assignedEmployees.map(emp => `(EmployeeID: ${emp.employeeId})`),
+                assignedToNames: assignedEmployees.map(emp => `${emp.firstName} ${emp.lastName}`),
+                createdAt: formatDate(task.createdAt),
+                updatedAt: formatDate(task.updatedAt)
+            };
+        }));
+
+        res.json({ message: "Task reassigned successfully!", vendorId, tasks: formattedTasks });
 
     } catch (err) {
         console.error("Error reassigning task:", err);
@@ -182,10 +276,31 @@ router.get('/task/:vendorId/:taskId', async (req, res) => {
             return res.status(400).json({ error: "Invalid Task ID format" });
         }
 
-        const task = await Task.findOne({ _id: taskId, vendorId });
-        if (!task) return res.status(404).json({ error: "Task not found for this vendor" });
+        const tasks = await Task.findOne({ _id: taskId, vendorId });
+        if (!tasks) return res.status(404).json({ error: "Task not found for this vendor" });
 
-        res.json({ vendorId, task });
+        // Fetch employee details
+        const formattedTasks = await Promise.all(tasks.map(async (task) => {
+            const assignedByEmployee = await Employee.findOne({ employeeId: task.assignedBy });
+            const assignedEmployees = await Employee.find({ employeeId: { $in: task.assignedTo } });
+
+            return {
+                title: task.title,
+                description: task.description,
+                category: task.category,
+                priority: task.priority,
+                dueDate: formatDate(task.dueDate),
+                vendorId: task.vendorId,
+                assignedBy: `(EmployeeID: ${assignedByEmployee?.employeeId || "N/A"})`,
+                assignedByName: assignedByEmployee ? `${assignedByEmployee.firstName} ${assignedByEmployee.lastName}` : "Unknown",
+                assignedTo: assignedEmployees.map(emp => `(EmployeeID: ${emp.employeeId})`),
+                assignedToNames: assignedEmployees.map(emp => `${emp.firstName} ${emp.lastName}`),
+                createdAt: formatDate(task.createdAt),
+                updatedAt: formatDate(task.updatedAt)
+            };
+        }));
+
+        res.json({ vendorId, tasks: formattedTasks });
 
     } catch (err) {
         res.status(500).json({ error: err.message });

@@ -4,7 +4,9 @@ const TaskSchema = new mongoose.Schema({
     title: { type: String, required: true },
     description: { type: String, required: true },
     assignedBy: { type: Number, required: true }, // ✅ Stores userId instead of ObjectId
+    assignedByName: { type: String, required: true },
     assignedTo: [{ type: Number, required: true }], // ✅ Supports multiple assigned users
+    assignedToNames: [{ type: String, required: true }],
     vendorId: { type: Number, required: true }, // ✅ Stores Vendor ID
     category: { type: String, required: true }, // ✅ New: Task category (Department)
     priority: { type: String, enum: ['high', 'medium', 'low'], required: true }, // ✅ New: Task priority
@@ -12,7 +14,8 @@ const TaskSchema = new mongoose.Schema({
     /* attachment: { type: String }, */ // ✅ New: Optional file attachment URL
     createdAt: { type: Date, default: Date.now },
     status: { type: String, enum: ['pending', 'in-progress', 'completed'], default: 'pending' },
-});
+    updatedAt: { type: Date, default: Date.now } // Track updates
+}, {timestamps : true});
 
 if (!global.TaskModel) {
     global.TaskModel = mongoose.models.Task || mongoose.model('Task', TaskSchema);
