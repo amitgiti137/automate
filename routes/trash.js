@@ -47,23 +47,26 @@ router.delete('/delete-admin/:vendorId', async (req, res) => {
     }
 });
 
-// ✅ DELETE Employee and Remove from Assigned Tasks
-router.delete('/delete-employee/:employeeId', async (req, res) => {
-    const { employeeId } = req.params;
+// ✅ DELETE Employee (Requires vendorId for Security)
+router.delete('/delete-employee/:vendorId/:employeeId', async (req, res) => {
+    const { vendorId, employeeId } = req.params;
 
     try {
-        // ✅ Find the employee
-        const employee = await Employee.findOne({ employeeId });
-        if (!employee) return res.status(404).json({ error: "Employee not found" });
+        // ✅ Validate vendorId
+        if (!(await validateVendor(vendorId))) {
+            return res.status(400).json({ error: "Invalid Vendor ID." });
+        }
 
-        const vendorId = employee.vendorId;
+        // ✅ Find employee with matching vendorId
+        const employee = await Employee.findOne({ vendorId, employeeId });
+        if (!employee) return res.status(404).json({ error: "Employee not found for this vendor." });
 
         // ✅ Delete employee
-        await Employee.deleteOne({ employeeId });
+        await Employee.deleteOne({ vendorId, employeeId });
 
         // ✅ Remove employee from all assigned tasks
         const updatedTasks = await Task.updateMany(
-            { assignedTo: employeeId },
+            { vendorId, assignedTo: employeeId },
             { $pull: { assignedTo: employeeId } }
         );
 
@@ -79,17 +82,23 @@ router.delete('/delete-employee/:employeeId', async (req, res) => {
     }
 });
 
-// ✅ DELETE Task by Task ID
-router.delete('/delete-task/:taskId', async (req, res) => {
-    const { taskId } = req.params;
+// ✅ DELETE Task (Requires vendorId for Security)
+router.delete('/delete-task/:vendorId/:taskId', async (req, res) => {
+    const { vendorId, taskId } = req.params;
 
     try {
-        // ✅ Find and delete the task
-        const deletedTask = await Task.findOneAndDelete({ _id: taskId });
-        if (!deletedTask) return res.status(404).json({ error: "Task not found" });
+        // ✅ Validate vendorId
+        if (!(await validateVendor(vendorId))) {
+            return res.status(400).json({ error: "Invalid Vendor ID." });
+        }
+
+        // ✅ Find and delete the task with matching vendorId
+        const deletedTask = await Task.findOneAndDelete({ vendorId, _id: taskId });
+        if (!deletedTask) return res.status(404).json({ error: "Task not found for this vendor." });
 
         res.json({
             message: "Task deleted successfully!",
+            vendorId,
             deletedTaskId: taskId
         });
 

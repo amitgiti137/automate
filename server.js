@@ -19,7 +19,7 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/tasks', require('./routes/task'));
 app.use('/api/create', require('./routes/create'));
 app.use('/api/taskall', require('./routes/taskall'));
-app.use('api/trash', require('/routes/trash'));
+app.use('/api/trash', require('./routes/trash'));
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
