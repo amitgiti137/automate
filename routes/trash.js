@@ -93,7 +93,7 @@ router.delete('/delete-task/:vendorId/:taskId', async (req, res) => {
         }
 
         // ✅ Find and delete the task with matching vendorId
-        const deletedTask = await Task.findOneAndDelete({ vendorId, _id: taskId });
+        const deletedTask = await Task.findOneAndDelete({ vendorId, taskId });
         if (!deletedTask) return res.status(404).json({ error: "Task not found for this vendor." });
 
         res.json({

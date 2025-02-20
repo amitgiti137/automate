@@ -286,6 +286,7 @@ router.put("/reassign/:vendorId/:taskId", async (req, res) => {
             priority: task.priority,
             dueDate: formatDate(task.dueDate),
             vendorId: task.vendorId,
+            status: task.status,
             assignedBy: `(EmployeeID: ${assignedByEmployee?.employeeId || "N/A"})`,
             assignedByName: assignedByEmployee ? `${assignedByEmployee.firstName} ${assignedByEmployee.lastName}` : "Unknown",
             assignedTo: assignedEmployees.map(emp => `(EmployeeID: ${emp.employeeId})`),
