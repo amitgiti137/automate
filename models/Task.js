@@ -4,9 +4,9 @@ const TaskSchema = new mongoose.Schema({
     title: { type: String, required: true },
     description: { type: String, required: true },
     assignedBy: { type: Number, required: true }, // ✅ Stores userId instead of ObjectId
-    assignedByName: { type: String, required: true },
+    assignedByName: { type: String },
     assignedTo: [{ type: Number, required: true }], // ✅ Supports multiple assigned users
-    assignedToNames: [{ type: String, required: true }],
+    assignedToNames: [{ type: String }],
     vendorId: { type: Number, required: true }, // ✅ Stores Vendor ID
     category: { type: String, required: true }, // ✅ New: Task category (Department)
     priority: { type: String, enum: ['high', 'medium', 'low'], required: true }, // ✅ New: Task priority
