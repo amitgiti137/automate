@@ -12,11 +12,37 @@ const validateVendor = async (vendorId) => {
     return !!vendorExists;
 };
 
+// ✅ Middleware: Verify Admin Role Before Deleting
+const verifyAdminRole = async (req, res, next) => {
+    const { vendorId, role } = req.body;
+
+    if (!vendorId || !role) {
+        return res.status(400).json({ error: "Vendor ID and Role are required." });
+    }
+
+    // ✅ Check if vendorId belongs to an actual Admin
+    const adminUser = await Admin.findOne({ vendorId });
+
+    if (!adminUser || role !== "Admin" || adminUser.role !== "Admin") {
+        return res.status(403).json({ error: "Unauthorized. Only an Admin can perform this action." });
+    }
+
+    next(); // ✅ Proceed to the next function
+};
+
+
+
 // ✅ DELETE Admin and all related Employees & Tasks
-router.delete('/delete-admin/:vendorId', async (req, res) => {
-    const { vendorId } = req.params;
+router.delete('/delete-admin/:vendorId/:role', verifyAdminRole, async (req, res) => {
+    const { vendorId, role } = req.params;
 
     try {
+
+        // ✅ Validate role from URL
+        if (role !== "Admin") {
+            return res.status(403).json({ error: "Not authorized. Only an Admin can delete an admin." });
+        }
+
         // ✅ Validate vendorId
         if (!(await validateVendor(vendorId))) {
             return res.status(400).json({ error: "Invalid Vendor ID." });
@@ -48,10 +74,15 @@ router.delete('/delete-admin/:vendorId', async (req, res) => {
 });
 
 // ✅ DELETE Employee (Requires vendorId for Security)
-router.delete('/delete-employee/:vendorId/:employeeId', async (req, res) => {
-    const { vendorId, employeeId } = req.params;
+router.delete('/delete-employee/:vendorId/:employeeId/:role', async (req, res) => {
+    const { vendorId, employeeId, role } = req.params;
 
     try {
+        // ✅ Validate role from URL
+        if (role !== "Admin") {
+            return res.status(403).json({ error: "Not authorized. Only an Admin can delete an admin." });
+        }
+
         // ✅ Validate vendorId
         if (!(await validateVendor(vendorId))) {
             return res.status(400).json({ error: "Invalid Vendor ID." });
@@ -83,10 +114,15 @@ router.delete('/delete-employee/:vendorId/:employeeId', async (req, res) => {
 });
 
 // ✅ DELETE Task (Requires vendorId for Security)
-router.delete('/delete-task/:vendorId/:taskId', async (req, res) => {
-    const { vendorId, taskId } = req.params;
+router.delete('/delete-task/:vendorId/:taskId/:role', async (req, res) => {
+    const { vendorId, taskId, role } = req.params;
 
     try {
+        // ✅ Validate role from URL
+        if (role !== "Admin") {
+            return res.status(403).json({ error: "Not authorized. Only an Admin can delete an admin." });
+        }
+
         // ✅ Validate vendorId
         if (!(await validateVendor(vendorId))) {
             return res.status(400).json({ error: "Invalid Vendor ID." });
