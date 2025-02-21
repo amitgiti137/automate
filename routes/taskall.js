@@ -28,7 +28,7 @@ const formatDate = (date) => new Date(date).toLocaleString('en-GB', {
 // ✅ Configure Multer Storage
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        const uploadPath = 'uploads/';
+        const uploadPath = path.join(__dirname, '../uploads/');
         if (!fs.existsSync(uploadPath)) {
             fs.mkdirSync(uploadPath, { recursive: true });
         }
@@ -39,7 +39,7 @@ const storage = multer.diskStorage({
     }
 });
 
-// ✅ File Filter (Optional - Restrict to PDFs, Images, Docs)
+// ✅ Ensure file type check works
 const fileFilter = (req, file, cb) => {
     const allowedExtensions = ['.jpg', '.jpeg', '.png', '.pdf', '.doc', '.docx'];
     if (allowedExtensions.includes(path.extname(file.originalname).toLowerCase())) {
@@ -87,8 +87,11 @@ router.post('/', upload.single('attachment'), async (req, res) => {
             return res.status(400).json({ error: "You cannot assign a task to yourself" });
         } */
 
-        // ✅ Handle File Upload
-        const attachment = req.file ? req.file.path : null;
+        // ✅ Ensure file exists before accessing it
+        let attachment = null;
+        if (req.file) {
+            attachment = req.file.path.replace(/\\/g, "/"); // Fix Windows path issue
+        }
 
         // ✅ Create and save task
         const task = new Task({
