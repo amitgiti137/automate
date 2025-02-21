@@ -25,19 +25,21 @@ router.post('/register_admin', async (req, res) => {
 
     try {
         const admin = new Admin({
-            firstName, lastName, email, password, whatsappNumber, department, designation, employeeCode, activeStatus
+            firstName, lastName, email, password, whatsappNumber, department, designation, employeeCode, activeStatus,
+            
         });
 
         await admin.save();
 
         // Generate first employeeId for this vendor
-        const employeeId = admin.vendorId * 10000 + 1;
+        const employeeId = admin.employeeId;
 
         // Create employee entry for the admin
         const employee = new Employee({
             firstName, lastName, email, password, whatsappNumber, department, designation, employeeCode, activeStatus,
             vendorId: admin.vendorId,
-            employeeId
+            employeeId: admin.employeeId
+            
         });
 
         await employee.save();
@@ -47,13 +49,11 @@ router.post('/register_admin', async (req, res) => {
             message: 'Admin registered successfully!',
             admin: {
                 ...admin.toObject(),
-                employeeId: employee.employeeId,
                 createdAt: formatDate(admin.createdAt),
                 updatedAt: formatDate(admin.updatedAt)
             },
             employee: {
                 ...employee.toObject(),
-                employeeId: employee.employeeId,
                 createdAt: formatDate(employee.createdAt),
                 updatedAt: formatDate(employee.updatedAt)
             }
@@ -112,7 +112,16 @@ router.post('/login', async (req, res) => {
             return res.status(400).json({ error: 'Invalid credentials' });
         }
 
-        const token = jwt.sign({ id: user._id, vendorId: user.vendorId }, process.env.JWT_SECRET, { expiresIn: '1h' });
+        // ✅ Fetch employeeId from Admin model if the user is an Admin
+        /* let employeeId = user.employeeId;
+        if (user instanceof Admin) {
+            const employee = await Employee.findOne({ email, vendorId: user.vendorId });
+            if (employee) {
+                employeeId = employee.employeeId;
+            }
+        } */
+
+        const token = jwt.sign({ id: user._id, vendorId: user.vendorId, role: user.role }, process.env.JWT_SECRET, { expiresIn: '1h' });
 
         res.json({
             token,
@@ -199,10 +208,10 @@ router.get('/employee_details', async (req, res) => {
     }
 
     try {
-        const adminExists = await Admin.findOne({ vendorId });
+        /* const adminExists = await Admin.findOne({ vendorId });
         if (!adminExists) {
             return res.status(400).json({ status: false, message: 'Invalid Vendor ID. No admin found with this Vendor ID' });
-        }
+        } */
 
         const user = await Employee.findOne({ email, vendorId });
 
@@ -242,10 +251,10 @@ router.get('/employees', async (req, res) => {
     }
     try {
 
-        const adminExists = await Admin.findOne({ vendorId });
+        /* const adminExists = await Admin.findOne({ vendorId });
         if (!adminExists) {
             return res.status(400).json({ status: false, message: 'Invalid Vendor ID. No admin found with this Vendor ID' });
-        }
+        } */
 
         const users = await Employee.find({ vendorId }, 'employeeId vendorId firstName lastName email whatsappNumber department designation employeeCode activeStatus createdAt updatedAt');
         `    `
@@ -262,6 +271,7 @@ router.get('/employees', async (req, res) => {
             firstName: user.firstName,
             lastName: user.lastName,
             email: user.email,
+            role: user.role,
             whatsappNumber: user.whatsappNumber,
             department: user.department,
             designation: user.designation,

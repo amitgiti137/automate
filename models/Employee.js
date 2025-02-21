@@ -12,6 +12,7 @@ const EmployeeSchema = new mongoose.Schema({
     designation: { type: String, required: true },
     employeeCode: { type: String, required: true },
     activeStatus: { type: String, required: true },
+    role: { type: String, enum: ["Admin", "Employee"], default: "Employee" },
 }, { timestamps: true });
 
 // Generate employeeId before saving
@@ -27,6 +28,11 @@ EmployeeSchema.pre('validate', async function (next) {
         }
 
         this.employeeId = await generateNextEmployeeId(this.vendorId);
+
+        // ✅ If this employee is the same as the admin, mark role as 'Admin'
+        if (this.email === adminExists.email) {
+            this.role = "Admin";
+        }
     } catch (error) {
         return next(error);
     }

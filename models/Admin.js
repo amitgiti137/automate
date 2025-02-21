@@ -12,6 +12,7 @@ const AdminSchema = new mongoose.Schema({
     designation: { type: String, required: true },
     employeeCode: { type: String, required: true },
     activeStatus: { type: String, required: true },
+    role: { type: String, enum: ["Admin"], default: "Admin" },
 }, { timestamps: true });
 
 // Generate vendorId before saving a new admin
