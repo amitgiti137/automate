@@ -76,8 +76,8 @@ router.post('/register_employee', async (req, res) => {
     }
 
     try {
-        const adminExists = await Admin.findOne({ vendorId, role: "Admin" });
-        if (!adminExists) {
+        const adminExists = await Admin.findOne({ vendorId });
+        if (!adminExists || adminExists.role !== "Admin") {
             return res.status(400).json({ error: 'Invalid Vendor ID. No admin found with this Vendor ID' });
         }
 
