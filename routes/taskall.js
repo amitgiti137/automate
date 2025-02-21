@@ -1,12 +1,15 @@
 const express = require('express');
 const mongoose = require('mongoose');
+const multer = require('multer'); // ✅ Import Multer
 const Task = require('../models/Task');
 const Employee = require('../models/Employee'); // ✅ Replace User with Employee
 const Admin = require('../models/Admin'); // ✅ Validate vendorId
+const path = require('path');
+const fs = require('fs');
 const router = express.Router();
 
 // Function to check valid ObjectId
-const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
+/* const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id); */
 
 // ✅ Function to validate vendorId
 const validateVendor = async (vendorId) => {
@@ -21,8 +24,37 @@ const formatDate = (date) => new Date(date).toLocaleString('en-GB', {
     hour: '2-digit', minute: '2-digit', hour12: false
 });
 
+
+// ✅ Configure Multer Storage
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        const uploadPath = 'uploads/';
+        if (!fs.existsSync(uploadPath)) {
+            fs.mkdirSync(uploadPath, { recursive: true });
+        }
+        cb(null, uploadPath);
+    },
+    filename: (req, file, cb) => {
+        cb(null, `task-${Date.now()}${path.extname(file.originalname)}`);
+    }
+});
+
+// ✅ File Filter (Optional - Restrict to PDFs, Images, Docs)
+const fileFilter = (req, file, cb) => {
+    const allowedExtensions = ['.jpg', '.jpeg', '.png', '.pdf', '.doc', '.docx'];
+    if (allowedExtensions.includes(path.extname(file.originalname).toLowerCase())) {
+        cb(null, true);
+    } else {
+        cb(new Error('Invalid file type. Allowed: JPG, PNG, PDF, DOC, DOCX.'));
+    }
+};
+
+// ✅ Initialize Multer
+const upload = multer({ storage, fileFilter });
+
+
 // ✅ Task Creation (with Employee IDs)
-router.post('/', async (req, res) => {
+router.post('/', upload.single('attachment'), async (req, res) => {
     try {
         const { title, description, assignedBy, assignedTo, category, priority, dueDate, vendorId } = req.body;
 
@@ -55,9 +87,12 @@ router.post('/', async (req, res) => {
             return res.status(400).json({ error: "You cannot assign a task to yourself" });
         } */
 
+        // ✅ Handle File Upload
+        const attachment = req.file ? req.file.path : null;
+
         // ✅ Create and save task
         const task = new Task({
-            title, description, assignedBy: assignedByNumber, assignedTo: assignedToNumbers, category, priority, dueDate, vendorId,
+            title, description, assignedBy: assignedByNumber, assignedTo: assignedToNumbers, category, priority, dueDate, vendorId, attachment,
         });
 
         await task.save();
@@ -77,6 +112,7 @@ router.post('/', async (req, res) => {
                 assignedByName:`${assignedByEmployee.firstName} ${assignedByEmployee.lastName}`,
                 assignedTo: assignedEmployees.map(emp => `(EmployeeID: ${emp.employeeId})`),
                 assignedToNames: assignedEmployees.map(emp => `${emp.firstName} ${emp.lastName}`),
+                attachment: attachment ? `/${attachment}` : null, // ✅ Return attachment path in response
                 createdAt: formatDate(task.createdAt),
                 updatedAt: formatDate(task.updatedAt)
             },
@@ -117,6 +153,7 @@ router.get('/vendor/:vendorId', async (req, res) => {
                 assignedByName: assignedByEmployee ? `${assignedByEmployee.firstName} ${assignedByEmployee.lastName}` : "Unknown",
                 assignedTo: assignedEmployees.map(emp => `(EmployeeID: ${emp.employeeId})`),
                 assignedToNames: assignedEmployees.map(emp => `${emp.firstName} ${emp.lastName}`),
+                attachment: task.attachment ? `/${task.attachment}` : null, // ✅ Return attachment path in response
                 createdAt: formatDate(task.createdAt),
                 updatedAt: formatDate(task.updatedAt)
             };
@@ -158,6 +195,7 @@ router.get('/assigned-by/:vendorId/:employeeId', async (req, res) => {
                 assignedByName: assignedByEmployee ? `${assignedByEmployee.firstName} ${assignedByEmployee.lastName}` : "Unknown",
                 assignedTo: assignedEmployees.map(emp => `(EmployeeID: ${emp.employeeId})`),
                 assignedToNames: assignedEmployees.map(emp => `${emp.firstName} ${emp.lastName}`),
+                attachment: task.attachment ? `/${task.attachment}` : null, // ✅ Return attachment path in response
                 createdAt: formatDate(task.createdAt),
                 updatedAt: formatDate(task.updatedAt)
             };
@@ -199,6 +237,7 @@ router.get('/assigned-to/:vendorId/:employeeId', async (req, res) => {
                 assignedByName: assignedByEmployee ? `${assignedByEmployee.firstName} ${assignedByEmployee.lastName}` : "Unknown",
                 assignedTo: assignedEmployees.map(emp => `(EmployeeID: ${emp.employeeId})`),
                 assignedToNames: assignedEmployees.map(emp => `${emp.firstName} ${emp.lastName}`),
+                attachment: task.attachment ? `/${task.attachment}` : null, // ✅ Return attachment path in response
                 createdAt: formatDate(task.createdAt),
                 updatedAt: formatDate(task.updatedAt)
             };
@@ -212,7 +251,7 @@ router.get('/assigned-to/:vendorId/:employeeId', async (req, res) => {
 });
 
 // ✅ Reassign Task (Ensure it belongs to the correct vendor)
-router.put("/reassign/:vendorId/:taskId", async (req, res) => {
+router.put("/reassign/:vendorId/:taskId", upload.single('attachment'), async (req, res) => {
     const { vendorId, taskId } = req.params;
     const { role, ...updateFields } = req.body;
 
@@ -242,6 +281,14 @@ router.put("/reassign/:vendorId/:taskId", async (req, res) => {
         // ✅ Role Validation: Only Admins can update the due date
         if (updateFields.dueDate && role !== "Admin") {
             return res.status(403).json({ error: "Only Admins can update the due date." });
+        }
+
+        // ✅ Remove old file if a new one is uploaded
+        if (req.file) {
+            if (task.attachment && fs.existsSync(task.attachment)) {
+                fs.unlinkSync(task.attachment);
+            }
+            task.attachment = req.file.path;
         }
 
         // ✅ Allow Updating Status
@@ -296,6 +343,7 @@ router.put("/reassign/:vendorId/:taskId", async (req, res) => {
             assignedByName: assignedByEmployee ? `${assignedByEmployee.firstName} ${assignedByEmployee.lastName}` : "Unknown",
             assignedTo: assignedEmployees.map(emp => `(EmployeeID: ${emp.employeeId})`),
             assignedToNames: assignedEmployees.map(emp => `${emp.firstName} ${emp.lastName}`),
+            attachment: task.attachment ? `/${task.attachment}` : null, // ✅ Return attachment path in response
             createdAt: formatDate(task.createdAt),
             updatedAt: formatDate(task.updatedAt)
         };
@@ -342,6 +390,7 @@ router.get('/task/:vendorId/:taskId', async (req, res) => {
             assignedByName: assignedByEmployee ? `${assignedByEmployee.firstName} ${assignedByEmployee.lastName}` : "Unknown",
             assignedTo: assignedEmployees.map(emp => `(EmployeeID: ${emp.employeeId})`),
             assignedToNames: assignedEmployees.map(emp => `${emp.firstName} ${emp.lastName}`),
+            attachment: task.attachment ? `/${task.attachment}` : null, // ✅ Return attachment path in response
             createdAt: formatDate(task.createdAt),
             updatedAt: formatDate(task.updatedAt)
         };
