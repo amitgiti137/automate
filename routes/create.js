@@ -78,7 +78,7 @@ router.post('/register_employee', async (req, res) => {
     try {
         const adminUser = await Admin.findOne({ vendorId });
          // ✅ Only Admins can register employees
-         if (!adminUser || adminUser.role !== "Admin") {
+         if (!adminUser || role !== "Admin" || adminUser.role !== "Admin") {
             return res.status(403).json({ error: 'Not authorized. Only an Admin can register employees.' });
         }
 
