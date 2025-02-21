@@ -82,8 +82,8 @@ router.post('/register_employee', async (req, res) => {
         }
 
         // ✅ Step 2: Validate that the requesting user has "Admin" role
-        if (role !== "Employee") {
-            return res.status(400).json({ error: 'Invalid role. Only "Admin" role can be assigned.' });
+        if (role !== Employee) {
+            return res.status(400).json({ error: 'Invalid role. Only Admin role can be assigned.' });
         }
 
         const employee = new Employee({
