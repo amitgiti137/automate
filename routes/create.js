@@ -140,7 +140,7 @@ router.post('/login', async (req, res) => {
 
 
 router.put('/update_employee', async (req, res) => {
-    const { email, newEmail, vendorId, ...updates } = req.body;
+    const { email, newEmail, vendorId, role, newRole, ...updates } = req.body;
 
     if (!email || !vendorId) {
         return res.status(400).json({ status: false, message: 'Email and Vendor ID are required' });
@@ -159,6 +159,14 @@ router.put('/update_employee', async (req, res) => {
             return res.status(404).json({ status: false, message: 'Employee not found' });
         }
 
+        // ✅ If newRole is provided, validate role
+        if (newRole) {
+            if (!role || role !== "Admin") {
+                return res.status(403).json({ status: false, message: "Only Admins can update an employee's role." });
+            }
+            user.role = newRole; // ✅ Assign the new role value
+        }
+
         // If user wants to update email, check if the new email already exists
         if (newEmail && newEmail !== email) {
             const existingEmail = await Employee.findOne({ email: newEmail });
@@ -167,6 +175,8 @@ router.put('/update_employee', async (req, res) => {
             }
             user.email = newEmail; // Update email
         }
+
+        
 
         // Only update the fields provided in the request
         Object.keys(updates).forEach((key) => {
