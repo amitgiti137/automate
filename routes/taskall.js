@@ -214,7 +214,7 @@ router.get('/assigned-to/:vendorId/:employeeId', async (req, res) => {
 // ✅ Reassign Task (Ensure it belongs to the correct vendor)
 router.put("/reassign/:vendorId/:taskId", async (req, res) => {
     const { vendorId, taskId } = req.params;
-    const updateFields = req.body;
+    const { role, ...updateFields } = req.body;
 
     try {
         if (!(await validateVendor(vendorId))) {
@@ -238,6 +238,11 @@ router.put("/reassign/:vendorId/:taskId", async (req, res) => {
 
         const task = await Task.findOne({ taskId, vendorId });
         if (!task) return res.status(404).json({ error: "Task not found for this vendor" });
+
+        // ✅ Role Validation: Only Admins can update the due date
+        if (updateFields.dueDate && role !== "Admin") {
+            return res.status(403).json({ error: "Only Admins can update the due date." });
+        }
 
         // ✅ Allow Updating Status
         if (updateFields.status) {
