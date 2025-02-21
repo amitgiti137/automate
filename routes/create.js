@@ -77,19 +77,16 @@ router.post('/register_employee', async (req, res) => {
 
     try {
         const adminExists = await Admin.findOne({ vendorId });
-        if (!adminExists) {
-            return res.status(400).json({ error: 'Invalid Vendor ID. No admin found with this Vendor ID' });
-        }
-
-        // ✅ Step 2: Validate that the requesting user has "Admin" role
-        if (role !== Employee) {
-            return res.status(400).json({ error: 'Invalid role. Only Admin role can be assigned.' });
+         // ✅ Only Admins can register employees
+         if (!adminUser || adminUser.role !== "Admin") {
+            return res.status(403).json({ error: 'Not authorized. Only an Admin can register employees.' });
         }
 
         const employee = new Employee({
             firstName, lastName, email, password, whatsappNumber, department, designation, employeeCode, activeStatus, vendorId
         });
 
+        // ✅ Register the employee
         await employee.save();
 
         res.status(201).json({
