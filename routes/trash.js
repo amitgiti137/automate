@@ -12,28 +12,12 @@ const validateVendor = async (vendorId) => {
     return !!vendorExists;
 };
 
-// ✅ Middleware: Verify Admin Role Before Deleting
-const verifyAdminRole = async (req, res, next) => {
-    const { vendorId, role } = req.body;
 
-    if (!vendorId || !role) {
-        return res.status(400).json({ error: "Vendor ID and Role are required." });
-    }
-
-    // ✅ Check if vendorId belongs to an actual Admin
-    const adminUser = await Admin.findOne({ vendorId });
-
-    if (!adminUser || role !== "Admin" || adminUser.role !== "Admin") {
-        return res.status(403).json({ error: "Unauthorized. Only an Admin can perform this action." });
-    }
-
-    next(); // ✅ Proceed to the next function
-};
 
 
 
 // ✅ DELETE Admin and all related Employees & Tasks
-router.delete('/delete-admin/:vendorId/:role', verifyAdminRole, async (req, res) => {
+router.delete('/delete-admin/:vendorId/:role', async (req, res) => {
     const { vendorId, role } = req.params;
 
     try {
