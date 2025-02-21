@@ -65,9 +65,9 @@ router.post('/register_admin', async (req, res) => {
 
 // **Employee Registration**
 router.post('/register_employee', async (req, res) => {
-    const { firstName, lastName, email, password, confirmPassword, whatsappNumber, department, designation, employeeCode, activeStatus, vendorId, adminEmployeeId } = req.body;
+    const { firstName, lastName, email, password, confirmPassword, whatsappNumber, department, designation, employeeCode, activeStatus, vendorId, role } = req.body;
 
-    if (!firstName || !lastName || !email || !password || !confirmPassword || !whatsappNumber || !department || !designation || !employeeCode || !activeStatus || !vendorId || !adminEmployeeId) {
+    if (!firstName || !lastName || !email || !password || !confirmPassword || !whatsappNumber || !department || !designation || !employeeCode || !activeStatus || !vendorId ||!role) {
         return res.status(400).json({ error: 'All fields are required' });
     }
 
@@ -76,15 +76,7 @@ router.post('/register_employee', async (req, res) => {
     }
 
     try {
-
-         // ✅ Check if the requester (adminEmployeeId) is actually an Admin
-         const adminUser = await Employee.findOne({ employeeId: adminEmployeeId, vendorId });
-
-         if (!adminUser || adminUser.role !== "Admin") {
-             return res.status(403).json({ error: "Unauthorized! Only Admins can register employees." });
-         }
-
-        const adminExists = await Admin.findOne({ vendorId });
+        const adminExists = await Admin.findOne({ vendorId, role: "Admin" });
         if (!adminExists) {
             return res.status(400).json({ error: 'Invalid Vendor ID. No admin found with this Vendor ID' });
         }
