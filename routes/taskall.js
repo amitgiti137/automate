@@ -1,21 +1,15 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const multer = require('multer'); // ✅ Import Multer
-const Grid = require("gridfs-stream");
-const { GridFsStorage } = require("multer-gridfs-storage");
 const Task = require('../models/Task');
 const Employee = require('../models/Employee'); // ✅ Replace User with Employee
 const Admin = require('../models/Admin'); // ✅ Validate vendorId
 const path = require('path');
 const fs = require('fs');
 const router = express.Router();
-require("dotenv").config();
 
 // Function to check valid ObjectId
 /* const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id); */
-
-const conn = mongoose.connection;
-let gfs;
 
 // ✅ Function to validate vendorId
 const validateVendor = async (vendorId) => {
@@ -31,29 +25,36 @@ const formatDate = (date) => new Date(date).toLocaleString('en-GB', {
 });
 
 
-conn.once("open", () => {
-    gfs = Grid(conn.db, mongoose.mongo);
-    gfs.collection("uploads"); // Collection where files will be stored
+// ✅ Configure Multer Storage
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        const uploadPath = path.join(__dirname, '../uploads/');
+        if (!fs.existsSync(uploadPath)) {
+            fs.mkdirSync(uploadPath, { recursive: true });
+        }
+        cb(null, uploadPath);
+    },
+    filename: (req, file, cb) => {
+        cb(null, file.originalname);
+    }
 });
 
-// ✅ Configure Multer GridFS Storage
-const storage = new GridFsStorage({
-    url: process.env.MONGO_URI, // MongoDB connection URL
-    file: (req, file) => {
-        return {
-            filename: `task-${Date.now()}-${file.originalname}`,
-            bucketName: "uploads", // This will be the collection name
-        };
-    },
-});
+// ✅ Ensure file type check works
+const fileFilter = (req, file, cb) => {
+    const allowedExtensions = ['.jpg', '.jpeg', '.png', '.pdf', '.doc', '.docx'];
+    if (allowedExtensions.includes(path.extname(file.originalname).toLowerCase())) {
+        cb(null, true);
+    } else {
+        cb(new Error('Invalid file type. Allowed: JPG, PNG, PDF, DOC, DOCX.'));
+    }
+};
 
 // ✅ Initialize Multer
-const upload = multer({ storage });
+const upload = multer({ storage, fileFilter });
 
 
 // ✅ Task Creation (with Employee IDs)
 router.post('/', upload.single('attachment'), async (req, res) => {
-    console.log("File Uploaded to MongoDB:", req.file);
     try {
         const { title, description, assignedBy, assignedTo, category, priority, dueDate, vendorId } = req.body;
 
@@ -86,13 +87,12 @@ router.post('/', upload.single('attachment'), async (req, res) => {
             return res.status(400).json({ error: "You cannot assign a task to yourself" });
         } */
 
-        // ✅ Ensure file exists before accessing it
-        // ✅ Store GridFS File ID Instead of Local Path
-        let attachmentFileId = req.file ? req.file.id : null;
+        // ✅ Handle File Upload
+        const attachment = req.file ? req.file.filename : null;
 
         // ✅ Create and save task
         const task = new Task({
-            title, description, assignedBy: assignedByNumber, assignedTo: assignedToNumbers, category, priority, dueDate, vendorId, attachment: attachmentFileId,
+            title, description, assignedBy: assignedByNumber, assignedTo: assignedToNumbers, category, priority, dueDate, vendorId, attachment,
         });
 
         await task.save();
@@ -112,7 +112,7 @@ router.post('/', upload.single('attachment'), async (req, res) => {
                 assignedByName:`${assignedByEmployee.firstName} ${assignedByEmployee.lastName}`,
                 assignedTo: assignedEmployees.map(emp => `(EmployeeID: ${emp.employeeId})`),
                 assignedToNames: assignedEmployees.map(emp => `${emp.firstName} ${emp.lastName}`),
-                attachment: attachmentFileId,
+                attachment: attachment ? `http://localhost:5000/uploads/${task.attachment}` : null, // ✅ Return attachment path in response
                 createdAt: formatDate(task.createdAt),
                 updatedAt: formatDate(task.updatedAt)
             },
@@ -153,7 +153,7 @@ router.get('/vendor/:vendorId', async (req, res) => {
                 assignedByName: assignedByEmployee ? `${assignedByEmployee.firstName} ${assignedByEmployee.lastName}` : "Unknown",
                 assignedTo: assignedEmployees.map(emp => `(EmployeeID: ${emp.employeeId})`),
                 assignedToNames: assignedEmployees.map(emp => `${emp.firstName} ${emp.lastName}`),
-                attachment: task.attachment ? `/${task.attachment}` : null, // ✅ Return attachment path in response
+                attachment: task.attachment ? `http://localhost:5000/uploads/${task.attachment}` : null, // ✅ Return attachment path in response
                 createdAt: formatDate(task.createdAt),
                 updatedAt: formatDate(task.updatedAt)
             };
@@ -195,7 +195,7 @@ router.get('/assigned-by/:vendorId/:employeeId', async (req, res) => {
                 assignedByName: assignedByEmployee ? `${assignedByEmployee.firstName} ${assignedByEmployee.lastName}` : "Unknown",
                 assignedTo: assignedEmployees.map(emp => `(EmployeeID: ${emp.employeeId})`),
                 assignedToNames: assignedEmployees.map(emp => `${emp.firstName} ${emp.lastName}`),
-                attachment: task.attachment ? `/${task.attachment}` : null, // ✅ Return attachment path in response
+                attachment: task.attachment ? `http://localhost:5000/uploads/${task.attachment}` : null, // ✅ Return attachment path in response
                 createdAt: formatDate(task.createdAt),
                 updatedAt: formatDate(task.updatedAt)
             };
@@ -237,7 +237,7 @@ router.get('/assigned-to/:vendorId/:employeeId', async (req, res) => {
                 assignedByName: assignedByEmployee ? `${assignedByEmployee.firstName} ${assignedByEmployee.lastName}` : "Unknown",
                 assignedTo: assignedEmployees.map(emp => `(EmployeeID: ${emp.employeeId})`),
                 assignedToNames: assignedEmployees.map(emp => `${emp.firstName} ${emp.lastName}`),
-                attachment: task.attachment ? `/${task.attachment}` : null, // ✅ Return attachment path in response
+                attachment: task.attachment ? `http://localhost:5000/uploads/${task.attachment}` : null, // ✅ Return attachment path in response
                 createdAt: formatDate(task.createdAt),
                 updatedAt: formatDate(task.updatedAt)
             };
@@ -288,7 +288,7 @@ router.put("/reassign/:vendorId/:taskId", upload.single('attachment'), async (re
             if (task.attachment && fs.existsSync(task.attachment)) {
                 fs.unlinkSync(task.attachment);
             }
-            task.attachment = req.file.path;
+            task.attachment = req.file.filename;
         }
 
         // ✅ Allow Updating Status
@@ -343,7 +343,7 @@ router.put("/reassign/:vendorId/:taskId", upload.single('attachment'), async (re
             assignedByName: assignedByEmployee ? `${assignedByEmployee.firstName} ${assignedByEmployee.lastName}` : "Unknown",
             assignedTo: assignedEmployees.map(emp => `(EmployeeID: ${emp.employeeId})`),
             assignedToNames: assignedEmployees.map(emp => `${emp.firstName} ${emp.lastName}`),
-            attachment: task.attachment ? `/${task.attachment}` : null, // ✅ Return attachment path in response
+            attachment: task.attachment ? `http://localhost:5000/uploads/${task.attachment}` : null, // ✅ Return attachment path in response
             createdAt: formatDate(task.createdAt),
             updatedAt: formatDate(task.updatedAt)
         };
@@ -390,7 +390,7 @@ router.get('/task/:vendorId/:taskId', async (req, res) => {
             assignedByName: assignedByEmployee ? `${assignedByEmployee.firstName} ${assignedByEmployee.lastName}` : "Unknown",
             assignedTo: assignedEmployees.map(emp => `(EmployeeID: ${emp.employeeId})`),
             assignedToNames: assignedEmployees.map(emp => `${emp.firstName} ${emp.lastName}`),
-            attachment: task.attachment ? `/${task.attachment}` : null, // ✅ Return attachment path in response
+            attachment: task.attachment ? `http://localhost:5000/uploads/${task.attachment}` : null, // ✅ Return attachment path in response
             createdAt: formatDate(task.createdAt),
             updatedAt: formatDate(task.updatedAt)
         };
