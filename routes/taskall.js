@@ -55,6 +55,8 @@ const upload = multer({ storage, fileFilter });
 
 // ✅ Task Creation (with Employee IDs)
 router.post('/', upload.single('attachment'), async (req, res) => {
+    console.log("File Received:", req.file);  // ✅ Log file in backend
+    console.log("Request Body:", req.body);   // ✅ Log form data
     try {
         const { title, description, assignedBy, assignedTo, category, priority, dueDate, vendorId } = req.body;
 

@@ -7,7 +7,7 @@ dotenv.config();
 connectDB();
 
 const app = express();
-app.use(cors({ origin: '*', methods: 'GET,POST,PUT,DELETE', allowedHeaders: 'Content-Type, Authorization' }));
+app.use(cors({ origin: '*', methods: 'GET,POST,PUT,DELETE', allowedHeaders: 'Content-Type, Authorization', credentials: true }));
 app.use(express.json());
 
 // This is the route that will display "Hello, World!" on the homepage
