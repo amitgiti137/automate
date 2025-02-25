@@ -112,7 +112,7 @@ router.post('/', upload.single('attachment'), async (req, res) => {
                 assignedByName:`${assignedByEmployee.firstName} ${assignedByEmployee.lastName}`,
                 assignedTo: assignedEmployees.map(emp => `(EmployeeID: ${emp.employeeId})`),
                 assignedToNames: assignedEmployees.map(emp => `${emp.firstName} ${emp.lastName}`),
-                attachment: attachment ? `https://automate-ptg5.onrender.com/${task.attachment}` : null, // ✅ Return attachment path in response
+                attachment: attachment ? `https://automate-ptg5.onrender.com/uploads/${task.attachment}` : null, // ✅ Return attachment path in response
                 createdAt: formatDate(task.createdAt),
                 updatedAt: formatDate(task.updatedAt)
             },
@@ -153,7 +153,7 @@ router.get('/vendor/:vendorId', async (req, res) => {
                 assignedByName: assignedByEmployee ? `${assignedByEmployee.firstName} ${assignedByEmployee.lastName}` : "Unknown",
                 assignedTo: assignedEmployees.map(emp => `(EmployeeID: ${emp.employeeId})`),
                 assignedToNames: assignedEmployees.map(emp => `${emp.firstName} ${emp.lastName}`),
-                attachment: task.attachment ? `https://automate-ptg5.onrender.com/${task.attachment}` : null, // ✅ Return attachment path in response
+                attachment: task.attachment ? `https://automate-ptg5.onrender.com/uploads/${task.attachment}` : null, // ✅ Return attachment path in response
                 createdAt: formatDate(task.createdAt),
                 updatedAt: formatDate(task.updatedAt)
             };
@@ -195,7 +195,7 @@ router.get('/assigned-by/:vendorId/:employeeId', async (req, res) => {
                 assignedByName: assignedByEmployee ? `${assignedByEmployee.firstName} ${assignedByEmployee.lastName}` : "Unknown",
                 assignedTo: assignedEmployees.map(emp => `(EmployeeID: ${emp.employeeId})`),
                 assignedToNames: assignedEmployees.map(emp => `${emp.firstName} ${emp.lastName}`),
-                attachment: task.attachment ? `https://automate-ptg5.onrender.com/${task.attachment}` : null, // ✅ Return attachment path in response
+                attachment: task.attachment ? `https://automate-ptg5.onrender.com/uploads/${task.attachment}` : null, // ✅ Return attachment path in response
                 createdAt: formatDate(task.createdAt),
                 updatedAt: formatDate(task.updatedAt)
             };
@@ -237,7 +237,7 @@ router.get('/assigned-to/:vendorId/:employeeId', async (req, res) => {
                 assignedByName: assignedByEmployee ? `${assignedByEmployee.firstName} ${assignedByEmployee.lastName}` : "Unknown",
                 assignedTo: assignedEmployees.map(emp => `(EmployeeID: ${emp.employeeId})`),
                 assignedToNames: assignedEmployees.map(emp => `${emp.firstName} ${emp.lastName}`),
-                attachment: task.attachment ? `https://automate-ptg5.onrender.com/${task.attachment}` : null, // ✅ Return attachment path in response
+                attachment: task.attachment ? `https://automate-ptg5.onrender.com/uploads/${task.attachment}` : null, // ✅ Return attachment path in response
                 createdAt: formatDate(task.createdAt),
                 updatedAt: formatDate(task.updatedAt)
             };
@@ -343,7 +343,7 @@ router.put("/reassign/:vendorId/:taskId", upload.single('attachment'), async (re
             assignedByName: assignedByEmployee ? `${assignedByEmployee.firstName} ${assignedByEmployee.lastName}` : "Unknown",
             assignedTo: assignedEmployees.map(emp => `(EmployeeID: ${emp.employeeId})`),
             assignedToNames: assignedEmployees.map(emp => `${emp.firstName} ${emp.lastName}`),
-            attachment: task.attachment ? `https://automate-ptg5.onrender.com/${task.attachment}` : null, // ✅ Return attachment path in response
+            attachment: task.attachment ? `https://automate-ptg5.onrender.com/uploads/${task.attachment}` : null, // ✅ Return attachment path in response
             createdAt: formatDate(task.createdAt),
             updatedAt: formatDate(task.updatedAt)
         };
@@ -390,7 +390,7 @@ router.get('/task/:vendorId/:taskId', async (req, res) => {
             assignedByName: assignedByEmployee ? `${assignedByEmployee.firstName} ${assignedByEmployee.lastName}` : "Unknown",
             assignedTo: assignedEmployees.map(emp => `(EmployeeID: ${emp.employeeId})`),
             assignedToNames: assignedEmployees.map(emp => `${emp.firstName} ${emp.lastName}`),
-            attachment: task.attachment ? `https://automate-ptg5.onrender.com/${task.attachment}` : null, // ✅ Return attachment path in response
+            attachment: task.attachment ? `https://automate-ptg5.onrender.com/uploads/${task.attachment}` : null, // ✅ Return attachment path in response
             createdAt: formatDate(task.createdAt),
             updatedAt: formatDate(task.updatedAt)
         };
